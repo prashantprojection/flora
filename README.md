@@ -2,6 +2,10 @@
 
 A mobile plant care companion built with Flutter.
 
+## Download the App
+
+You can download the latest APK directly from our GitHub releases page: [Download Flora APK](https://github.com/prashantprojection/flora/releases/download/v1.0.0/app-release.apk)
+
 ## Overview
 
 Flora is a smart plant care application that helps you keep your plants healthy and thriving. This Flutter application provides an intuitive mobile experience for managing your indoor garden.
@@ -23,19 +27,17 @@ Flora is a smart plant care application that helps you keep your plants healthy 
 
 ### Installation
 
-1.  Clone the repository:
-    ```bash
-    git clone <repository-url>
-    ```
-2.  Navigate to the `flora` directory:
+If you want to build the app from source, clone the repository from GitHub:
+
+1.  Navigate to the `flora` directory:
     ```bash
     cd flora
     ```
-3.  Install dependencies:
+2.  Install dependencies:
     ```bash
     flutter pub get
     ```
-4.  Run the application:
+3.  Run the application:
     ```bash
     flutter run
     ```
