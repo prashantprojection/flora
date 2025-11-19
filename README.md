@@ -42,6 +42,3 @@ If you want to build the app from source, clone the repository from GitHub:
     flutter run
     ```
 
-## Architecture
-
-For details on the project's architecture, see [ARCHITECTURE.md](ARCHITECTURE.md).
