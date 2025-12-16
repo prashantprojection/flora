@@ -2,11 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:camera/camera.dart';
+
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flora/widgets/bottom_nav_bar.dart';
 import 'package:flora/api/gemini_service.dart';
+import 'package:go_router/go_router.dart';
 
 class HealthCheckScreen extends ConsumerStatefulWidget {
   const HealthCheckScreen({super.key});
@@ -15,95 +15,40 @@ class HealthCheckScreen extends ConsumerStatefulWidget {
   ConsumerState<HealthCheckScreen> createState() => _HealthCheckScreenState();
 }
 
-class _HealthCheckScreenState extends ConsumerState<HealthCheckScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _HealthCheckScreenState extends ConsumerState<HealthCheckScreen> {
   File? _selectedImage;
   String? _description;
   bool _isLoading = false;
   String? _diagnosisResult;
-  CameraController? _cameraController;
-  List<CameraDescription>? _cameras;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _initializeCamera();
-  }
-
-  Future<void> _initializeCamera() async {
-    _cameras = await availableCameras();
-    if (_cameras != null && _cameras!.isNotEmpty) {
-      _cameraController = CameraController(
-        _cameras![0],
-        ResolutionPreset.medium,
-        enableAudio: false,
-      );
-      _cameraController!
-          .initialize()
-          .then((_) {
-            if (!mounted) {
-              return;
-            }
-            setState(() {});
-          })
-          .catchError((Object e) {
-            if (e is CameraException) {
-              // Handle camera errors here, e.g., show a snackbar.
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Error initializing camera: ${e.description}'),
-                ),
-              );
-            }
-          });
-    }
-  }
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
-    _tabController.dispose();
-    _cameraController?.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-        _diagnosisResult = null;
-      });
-    }
-  }
-
-  Future<void> _takePhoto() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Camera not available or initialized.')),
-      );
-      return;
-    }
     try {
-      final XFile file = await _cameraController!.takePicture();
-      setState(() {
-        _selectedImage = File(file.path);
-        _diagnosisResult = null;
-      });
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        imageQuality: 80, // Optimize image size
+      );
+      if (pickedFile != null) {
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+          _diagnosisResult = null;
+        });
+      }
     } catch (e) {
-      // TODO: Handle take photo error
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
     }
   }
 
   Future<void> _diagnosePlant() async {
-    if (_selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select or capture an image.')),
-      );
-      return;
-    }
+    if (_selectedImage == null) return;
 
     setState(() {
       _isLoading = true;
@@ -137,6 +82,32 @@ class _HealthCheckScreenState extends ConsumerState<HealthCheckScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Determine the active view state
+    final Widget currentView;
+    if (_diagnosisResult != null) {
+      currentView = _buildResultView();
+    } else if (_selectedImage != null) {
+      currentView = _buildPreviewView();
+    } else {
+      currentView = _buildSelectionView();
+    }
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_diagnosisResult != null || _selectedImage != null) {
+          _resetState();
+        } else {
+          // Go back to home if at root of health check
+          context.go('/');
+        }
+      },
+      child: currentView,
+    );
+  }
+
+  Widget _buildSelectionView() {
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -145,174 +116,273 @@ class _HealthCheckScreenState extends ConsumerState<HealthCheckScreen>
             color: Theme.of(context).colorScheme.primary,
             fontWeight: FontWeight.bold,
           ),
-        ), // Removed unnecessary semi-bold
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(LucideIcons.upload), text: 'Upload'),
-            Tab(icon: Icon(LucideIcons.camera), text: 'Camera'),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Spacer(),
+            Icon(
+              LucideIcons.stethoscope,
+              size: 64,
+              color: Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Plant Doctor',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Take a photo or upload an image to identify issues and get care tips.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildActionCard(
+                    icon: LucideIcons.camera,
+                    label: 'Camera',
+                    onTap: () => _pickImage(ImageSource.camera),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildActionCard(
+                    icon: LucideIcons.image,
+                    label: 'Gallery',
+                    onTap: () => _pickImage(ImageSource.gallery),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewView() {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft),
+          onPressed: _resetState,
+        ),
+        title: const Text('Analyze Plant'),
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              height: 250,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                image: DecorationImage(
+                  image: FileImage(_selectedImage!),
+                  fit: BoxFit.cover,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            TextFormField(
+              initialValue: _description,
+              onChanged: (value) => _description = value,
+              decoration: InputDecoration(
+                labelText: 'Add notes (optional)',
+                hintText: 'E.g. "Yellow spots on leaves"',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 56,
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton.icon(
+                      onPressed: _diagnosePlant,
+                      icon: const Icon(LucideIcons.sparkles),
+                      label: const Text(
+                        'Diagnose Issues',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultView() {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Diagnosis'),
+        leading: IconButton(
+          icon: const Icon(LucideIcons.x),
+          onPressed: _resetState,
         ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Plant Health Check',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium, // Changed to titleMedium for consistency
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      _selectedImage!,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Get an AI-powered health diagnosis for your plant. Use your camera or upload a photo.',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 300,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          // Upload Tab Content
-                          _selectedImage != null
-                              ? Image.file(_selectedImage!, fit: BoxFit.contain)
-                              : GestureDetector(
-                                  onTap: () => _pickImage(ImageSource.gallery),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.outline,
-                                      ), // Using outline color
-                                      borderRadius: BorderRadius.circular(
-                                        8,
-                                      ), // lg
-                                    ),
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Icon(
-                                            LucideIcons.upload,
-                                            size: 40,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'Click to upload a photo',
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodyMedium,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                          // Camera Tab Content
-                          _selectedImage != null
-                              ? Image.file(_selectedImage!, fit: BoxFit.contain)
-                              : (_cameraController != null &&
-                                        _cameraController!.value.isInitialized
-                                    ? Column(
-                                        children: [
-                                          Expanded(
-                                            child: CameraPreview(
-                                              _cameraController!,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          ElevatedButton(
-                                            onPressed: _takePhoto,
-                                            child: const Text('Capture Photo'),
-                                          ),
-                                        ],
-                                      )
-                                    : Center(
-                                        child: CircularProgressIndicator(
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                              ),
-                                        ),
-                                      )),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      initialValue: _description,
-                      onChanged: (value) => _description = value,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        hintText:
-                            'Optional: Add any details, e.g. \'leaves are yellow and have brown spots\'.',
-                        // Removed unnecessary border and focusedBorder, relying on theme defaults
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : ElevatedButton(
-                            onPressed: _selectedImage != null
-                                ? _diagnosePlant
-                                : null,
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(LucideIcons.heartPulse),
-                                SizedBox(width: 8),
-                                Text('Diagnose Plant'),
-                              ],
-                            ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Analysis Complete',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
                           ),
-                    if (_selectedImage != null || _diagnosisResult != null)
-                      TextButton(
-                        onPressed: _resetState,
-                        child: const Text('Start Over'),
-                      ),
-                  ],
-                ),
+                        ),
+                        Text(
+                          'Here is what we found',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            if (_diagnosisResult != null)
-              Card(
-                margin: const EdgeInsets.only(top: 16.0),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Diagnosis Result',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      MarkdownBody(
-                        data: _diagnosisResult!,
-                        styleSheet: MarkdownStyleSheet.fromTheme(
-                          Theme.of(context),
-                        ).copyWith(p: Theme.of(context).textTheme.bodyMedium),
-                      ),
-                    ],
+            const SizedBox(height: 24),
+            MarkdownBody(
+              data: _diagnosisResult ?? '',
+              styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                  .copyWith(
+                    p: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(height: 1.5),
+                    h1: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      height: 2,
+                    ),
+                    h2: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      height: 2,
+                    ),
+                    listBullet: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
-                ),
-              ),
+            ),
+            const SizedBox(height: 40),
+            OutlinedButton(
+              onPressed: _resetState,
+              child: const Text('Check Another Plant'),
+            ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
-      bottomNavigationBar: const BottomNavBar(),
+    );
+  }
+
+  Widget _buildActionCard({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 120,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

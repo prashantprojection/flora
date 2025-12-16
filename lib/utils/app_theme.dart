@@ -20,15 +20,59 @@ class AppTheme {
 
   // 2. Typography
   static final TextTheme textTheme = TextTheme(
-    headlineLarge: GoogleFonts.ptSans(fontSize: 32, fontWeight: FontWeight.bold, color: foreground), // Larger headlines if needed
-    titleLarge: GoogleFonts.ptSans(fontSize: 24, fontWeight: FontWeight.bold, color: foreground), // Page Title
-    titleMedium: GoogleFonts.ptSans(fontSize: 20, fontWeight: FontWeight.w600, color: cardForeground), // Card Title
-    bodyMedium: GoogleFonts.ptSans(fontSize: 14, fontWeight: FontWeight.normal, color: foreground), // Body (base)
-    bodySmall: GoogleFonts.ptSans(fontSize: 14, fontWeight: FontWeight.normal, color: mutedForeground), // Description/Muted
-    labelLarge: GoogleFonts.ptSans(fontSize: 14, fontWeight: FontWeight.w500, color: primaryForeground), // Button
-    labelMedium: GoogleFonts.ptSans(fontSize: 14, fontWeight: FontWeight.w500, color: foreground), // Label
-    bodyLarge: GoogleFonts.ptSans(fontSize: 16, fontWeight: FontWeight.normal, color: foreground),
-    labelSmall: GoogleFonts.ptSans(fontSize: 12, fontWeight: FontWeight.normal, color: mutedForeground), // Small/Caption
+    headlineLarge: GoogleFonts.ptSans(
+      fontSize: 32,
+      fontWeight: FontWeight.bold,
+      color: foreground,
+    ), // Larger headlines if needed
+    titleLarge: GoogleFonts.ptSans(
+      fontSize: 24,
+      fontWeight: FontWeight.bold,
+      color: foreground,
+    ), // Page Title
+    titleMedium: GoogleFonts.ptSans(
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      color: cardForeground,
+    ), // Card Title
+    bodyMedium: GoogleFonts.ptSans(
+      fontSize: 14,
+      fontWeight: FontWeight.normal,
+      color: foreground,
+    ), // Body (base)
+    bodySmall: GoogleFonts.ptSans(
+      fontSize: 14,
+      fontWeight: FontWeight.normal,
+      color: mutedForeground,
+    ), // Description/Muted
+    labelLarge: GoogleFonts.ptSans(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      color: primaryForeground,
+    ), // Button
+    labelMedium: GoogleFonts.ptSans(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      color: foreground,
+    ), // Label
+    bodyLarge: GoogleFonts.ptSans(
+      fontSize: 16,
+      fontWeight: FontWeight.normal,
+      color: foreground,
+    ),
+    labelSmall: GoogleFonts.ptSans(
+      fontSize: 12,
+      fontWeight: FontWeight.normal,
+      color: mutedForeground,
+    ), // Small/Caption
+    // Special style for currency symbols to ensure characters like ₹ render correctly
+    // avoiding font issues with some Google Fonts.
+    displayMedium: const TextStyle(
+      fontFamily: 'Arial',
+      fontSize: 32,
+      fontWeight: FontWeight.bold,
+      color: foreground,
+    ),
   );
 
   // 3. Spacing & Sizing
@@ -100,7 +144,9 @@ class AppTheme {
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: card,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(borderRadiusLg)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(borderRadiusLg),
+          ),
         ),
       ),
       appBarTheme: AppBarTheme(

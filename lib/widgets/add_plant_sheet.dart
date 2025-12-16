@@ -150,49 +150,12 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
     final theme = Theme.of(context);
     final isEditing = widget.plant != null;
 
-    Widget imageWidget;
-    if (_selectedImageFile != null) {
-      imageWidget = Image.file(_selectedImageFile!, fit: BoxFit.cover);
-    } else if (_initialImageUrl != null) {
-      if (_initialImageUrl!.startsWith('http')) {
-        imageWidget = Image.network(
-          _initialImageUrl!,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) =>
-              const Icon(LucideIcons.flower2, size: 100),
-        );
-      } else {
-        imageWidget = Image.file(
-          File(_initialImageUrl!),
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) =>
-              const Icon(LucideIcons.flower2, size: 100),
-        );
-      }
-    } else {
-      imageWidget = Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            LucideIcons.upload,
-            size: 40,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-          const SizedBox(height: AppTheme.spacing_2),
-          Text(
-            'Click to upload',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
-      );
-    }
-
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: DraggableScrollableSheet(
-        initialChildSize: 0.7,
+        initialChildSize: 0.85,
         maxChildSize: 0.95,
         minChildSize: 0.5,
         expand: false,
@@ -201,7 +164,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
             decoration: BoxDecoration(
               color: theme.scaffoldBackgroundColor,
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+                top: Radius.circular(28),
               ),
               boxShadow: [
                 BoxShadow(
@@ -217,39 +180,37 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
                 Container(
                   width: 40,
                   height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  margin: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[400],
+                    color: theme.colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
 
                 // Header
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppTheme.spacing_4,
-                    AppTheme.spacing_2,
-                    AppTheme.spacing_4,
-                    AppTheme.spacing_4,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 8.0,
                   ),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isEditing ? 'Edit Plant' : 'Add a New Plant',
-                              style: theme.textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: AppTheme.spacing_2),
-                            Text(
-                              isEditing
-                                  ? "Update the details for your plant."
-                                  : "Enter the details for your new plant. Click save when you're done.",
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ],
+                      Text(
+                        isEditing ? 'Edit Plant' : 'New Plant',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(LucideIcons.x),
+                        style: IconButton.styleFrom(
+                          backgroundColor: theme
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withValues(alpha: 0.5),
                         ),
                       ),
                     ],
@@ -259,142 +220,206 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
                 const Divider(height: 1),
 
                 Expanded(
-                  child: SingleChildScrollView(
+                  child: ListView(
                     controller: scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacing_4,
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: AppTheme.spacing_6),
-                          GestureDetector(
-                            onTap: _pickImage,
-                            child: Card(
-                              margin: EdgeInsets.zero,
-                              child: SizedBox(
-                                height: 200,
-                                width: double.infinity,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(
-                                    AppTheme.borderRadiusLg,
-                                  ),
-                                  child: imageWidget,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: AppTheme.spacing_4),
-                          TextFormField(
-                            controller: _nameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Plant Name',
-                              hintText: 'e.g., Monty',
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter a plant name.';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: AppTheme.spacing_4),
-                          TextFormField(
-                            controller: _speciesController,
-                            decoration: const InputDecoration(
-                              labelText: 'Species (Optional)',
-                              hintText: 'e.g., Monstera Deliciosa',
-                            ),
-                            // Removed validator to make it optional
-                          ),
-                          const SizedBox(height: AppTheme.spacing_4),
-                          GestureDetector(
-                            onTap: () => _selectDate(context),
-                            child: AbsorbPointer(
-                              child: TextFormField(
-                                controller: _dateController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Planting Date',
-                                  suffixIcon: Icon(LucideIcons.calendar),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please select a planting date.';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: AppTheme.spacing_4),
-                          TextFormField(
-                            controller: _locationController,
-                            decoration: const InputDecoration(
-                              labelText: 'Location (Optional)',
-                              hintText: 'e.g., Living Room Window',
-                              prefixIcon: Icon(LucideIcons.mapPin),
-                            ),
-                          ),
-                          const SizedBox(height: AppTheme.spacing_4),
-                          TextFormField(
-                            controller: _wateringScheduleController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Watering Schedule (days)',
-                              hintText: 'e.g., 7',
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter a watering schedule.';
-                              }
-                              if (int.tryParse(value) == null ||
-                                  int.parse(value) <= 0) {
-                                return 'Please enter a positive number.';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: AppTheme.spacing_6),
-                          SizedBox(
-                            width: double.infinity,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Flexible(
-                                  child: TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                      textStyle: Theme.of(
-                                        context,
-                                      ).textTheme.labelLarge,
+                    padding: const EdgeInsets.all(24.0),
+                    children: [
+                      // Image Picker Section
+                      Center(
+                        child: GestureDetector(
+                          onTap: _pickImage,
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  color:
+                                      theme.colorScheme.surfaceContainerHighest,
+                                  shape: BoxShape.circle,
+                                  image: _selectedImageFile != null
+                                      ? DecorationImage(
+                                          image: FileImage(_selectedImageFile!),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : (_initialImageUrl != null
+                                            ? DecorationImage(
+                                                image:
+                                                    _initialImageUrl!
+                                                        .startsWith('http')
+                                                    ? NetworkImage(
+                                                        _initialImageUrl!,
+                                                      )
+                                                    : FileImage(
+                                                            File(
+                                                              _initialImageUrl!,
+                                                            ),
+                                                          )
+                                                          as ImageProvider,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : null),
+                                  border: Border.all(
+                                    color: theme.colorScheme.outline.withValues(
+                                      alpha: 0.2,
                                     ),
-                                    child: const Text('Cancel'),
+                                    width: 1,
                                   ),
                                 ),
-                                const SizedBox(width: AppTheme.spacing_2),
-                                Flexible(
-                                  child: ElevatedButton(
-                                    onPressed: _isSaveEnabled
-                                        ? _submitForm
-                                        : null,
-                                    child: Text(
-                                      isEditing ? 'Update Plant' : 'Save Plant',
+                                child:
+                                    (_selectedImageFile == null &&
+                                        _initialImageUrl == null)
+                                    ? Icon(
+                                        LucideIcons.camera,
+                                        size: 40,
+                                        color: theme.colorScheme.primary,
+                                      )
+                                    : null,
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: theme.scaffoldBackgroundColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    LucideIcons.pencil,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionLabel(context, 'Basic Info'),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _nameController,
+                              decoration: _buildInputDecoration(
+                                context,
+                                label: 'Plant Name',
+                                hint: 'e.g., Monty',
+                                icon: LucideIcons.leaf,
+                              ),
+                              validator: (value) =>
+                                  (value == null || value.isEmpty)
+                                  ? 'Required'
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _speciesController,
+                              decoration: _buildInputDecoration(
+                                context,
+                                label: 'Species (Optional)',
+                                hint: 'e.g., Monstera Deliciosa',
+                                icon: LucideIcons.sprout,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            _buildSectionLabel(context, 'Care Details'),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () => _selectDate(context),
+                                    child: AbsorbPointer(
+                                      child: TextFormField(
+                                        controller: _dateController,
+                                        decoration: _buildInputDecoration(
+                                          context,
+                                          label: 'Planted On',
+                                          hint: 'Select Date',
+                                          icon: LucideIcons.calendar,
+                                        ),
+                                        validator: (value) =>
+                                            (value == null || value.isEmpty)
+                                            ? 'Required'
+                                            : null,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: AppTheme.spacing_4),
-                        ],
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _locationController,
+                              decoration: _buildInputDecoration(
+                                context,
+                                label: 'Location',
+                                hint: 'e.g., Living Room',
+                                icon: LucideIcons.mapPin,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _wateringScheduleController,
+                              keyboardType: TextInputType.number,
+                              decoration: _buildInputDecoration(
+                                context,
+                                label: 'Water Every (days)',
+                                hint: 'e.g., 7',
+                                icon: LucideIcons.droplets,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Required';
+                                }
+                                final n = int.tryParse(value);
+                                if (n == null || n <= 0) return 'Invalid';
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 40),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _isSaveEnabled ? _submitForm : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            foregroundColor: theme.colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            isEditing ? 'Update Plant' : 'Save Plant',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: MediaQuery.of(context).viewInsets.bottom + 20,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -402,6 +427,54 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildSectionLabel(BuildContext context, String label) {
+    return Text(
+      label.toUpperCase(),
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration(
+    BuildContext context, {
+    required String label,
+    required String hint,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(
+        icon,
+        size: 20,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+      filled: true,
+      fillColor: theme.colorScheme.surface,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.3),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.3),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 }

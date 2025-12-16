@@ -16,7 +16,7 @@ class PlantCard extends StatelessWidget {
     final wateringStatus = _getWateringStatus(plant);
 
     return GestureDetector(
-      onTap: () => context.go('/plant/\${plant.id}'),
+      onTap: () => context.push('/plant/${plant.id}'),
       child: Card(
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
@@ -29,48 +29,49 @@ class PlantCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Plant Image
-            SizedBox(
-              height: 180, // Slightly taller image
-              width: double.infinity,
-              child:
-                  plant.imageUrl != null && plant.imageUrl!.startsWith('http')
-                  ? Image.network(
-                      plant.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Center(
-                        child: Icon(
-                          LucideIcons.flower2,
-                          size: 60,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withAlpha(128),
+            Expanded(
+              child: SizedBox(
+                width: double.infinity,
+                child:
+                    plant.imageUrl != null && plant.imageUrl!.startsWith('http')
+                    ? Image.network(
+                        plant.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(
+                            LucideIcons.flower2,
+                            size: 60,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withAlpha(128),
+                          ),
                         ),
-                      ),
-                    )
-                  : (plant.imageUrl != null
-                        ? Image.file(
-                            File(plant.imageUrl!),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Center(
-                                  child: Icon(
-                                    LucideIcons.flower2,
-                                    size: 60,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withAlpha(128),
+                      )
+                    : (plant.imageUrl != null
+                          ? Image.file(
+                              File(plant.imageUrl!),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Center(
+                                    child: Icon(
+                                      LucideIcons.flower2,
+                                      size: 60,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withAlpha(128),
+                                    ),
                                   ),
-                                ),
-                          )
-                        : Center(
-                            child: Icon(
-                              LucideIcons.flower2,
-                              size: 60,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withAlpha(128),
-                            ),
-                          )),
+                            )
+                          : Center(
+                              child: Icon(
+                                LucideIcons.flower2,
+                                size: 60,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withAlpha(128),
+                              ),
+                            )),
+              ),
             ),
             // Plant Details
             Padding(

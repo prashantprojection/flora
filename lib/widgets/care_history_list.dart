@@ -6,22 +6,28 @@ import 'package:flora/utils/app_theme.dart';
 
 class CareHistoryList extends StatelessWidget {
   final List<CareEvent> careHistory;
+  final int? limit;
 
-  const CareHistoryList({super.key, required this.careHistory});
+  const CareHistoryList({super.key, required this.careHistory, this.limit});
 
   @override
   Widget build(BuildContext context) {
+    final sortedHistory = List<CareEvent>.from(careHistory)
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    final displayList = limit != null
+        ? sortedHistory.take(limit!).toList()
+        : sortedHistory;
+
     return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Care History',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: AppTheme.spacing_4),
             if (careHistory.isEmpty)
               Center(
                 child: Padding(
@@ -38,9 +44,9 @@ class CareHistoryList extends StatelessWidget {
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: careHistory.length,
+                itemCount: displayList.length,
                 itemBuilder: (context, index) {
-                  final event = careHistory[index];
+                  final event = displayList[index];
                   final details = _getCareTypeDetails(event.type, context);
                   return IntrinsicHeight(
                     child: Row(
@@ -64,7 +70,9 @@ class CareHistoryList extends StatelessWidget {
                                 height: 40,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: details['color'].withOpacity(0.2),
+                                  color: details['color'].withValues(
+                                    alpha: 0.2,
+                                  ),
                                 ),
                                 child: Icon(
                                   details['icon'],
@@ -129,26 +137,24 @@ class CareHistoryList extends StatelessWidget {
     CareType type,
     BuildContext context,
   ) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
     switch (type) {
       case CareType.watering:
         return {
           'icon': LucideIcons.droplets,
           'label': 'Watered',
-          'color': colorScheme.primary,
+          'color': Colors.blue,
         };
       case CareType.fertilizing:
         return {
           'icon': LucideIcons.leaf,
           'label': 'Fertilized',
-          'color': colorScheme.secondary,
+          'color': Colors.green,
         };
       case CareType.pruning:
         return {
           'icon': LucideIcons.scissors,
           'label': 'Pruned',
-          'color': colorScheme.onSurface,
+          'color': Colors.orange,
         };
     }
   }

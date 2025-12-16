@@ -65,7 +65,7 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Care activity logged: ${careTypeDetails['label']}'),
-          backgroundColor: careTypeDetails['color'].withOpacity(0.8),
+          backgroundColor: careTypeDetails['color'].withValues(alpha: 0.8),
         ),
       );
       Navigator.of(context).pop();
@@ -76,49 +76,47 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
     CareType type,
     BuildContext context,
   ) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
     switch (type) {
       case CareType.watering:
         return {
           'icon': LucideIcons.droplets,
           'label': 'Watered',
-          'color': colorScheme.primary,
+          'color': Colors.blue,
         };
       case CareType.fertilizing:
         return {
           'icon': LucideIcons.leaf,
           'label': 'Fertilized',
-          'color': colorScheme.secondary,
+          'color': Colors.green,
         };
       case CareType.pruning:
         return {
           'icon': LucideIcons.scissors,
           'label': 'Pruned',
-          'color': colorScheme.onSurface,
+          'color': Colors.orange,
         };
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context); // Need theme for Container decoration
+    final theme = Theme.of(context);
 
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: DraggableScrollableSheet(
-        initialChildSize: 0.7,
+        initialChildSize: 0.6,
         maxChildSize: 0.9,
-        minChildSize: 0.5,
+        minChildSize: 0.4,
         expand: false,
         builder: (BuildContext context, ScrollController scrollController) {
           return Container(
             decoration: BoxDecoration(
               color: theme.scaffoldBackgroundColor,
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+                top: Radius.circular(28),
               ),
               boxShadow: [
                 BoxShadow(
@@ -130,137 +128,196 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
             ),
             child: Column(
               children: [
-                // Handle bar
                 Container(
                   width: 40,
                   height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  margin: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[400],
+                    color: theme.colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                // Header
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppTheme.spacing_4,
-                    AppTheme.spacing_2,
-                    AppTheme.spacing_4,
-                    AppTheme.spacing_4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Log a Care Activity',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: AppTheme.spacing_2),
-                            Text(
-                              'Record a recent care activity for your plant.',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ],
+                      Text(
+                        'Log Care',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(LucideIcons.x),
+                        style: IconButton.styleFrom(
+                          backgroundColor: theme
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withValues(alpha: 0.5),
                         ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 16),
                 const Divider(height: 1),
                 Expanded(
-                  // Added Expanded here
-                  child: SingleChildScrollView(
-                    controller: scrollController, // Pass the scrollController
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacing_4,
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // ... existing form fields ...
-                          const SizedBox(height: AppTheme.spacing_6),
-                          DropdownButtonFormField<CareType>(
-                            initialValue: _selectedCareType,
-                            onChanged: (CareType? newValue) {
-                              setState(() {
-                                _selectedCareType = newValue!;
-                              });
-                            },
-                            items: CareType.values.map((CareType careType) {
-                              return DropdownMenuItem<CareType>(
-                                value: careType,
-                                child: Row(
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(24.0),
+                    children: [
+                      Text(
+                        'WHAT DID YOU DO TODAY?',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: CareType.values.map((type) {
+                          final isSelected = _selectedCareType == type;
+                          final details = _getCareTypeDetails(type, context);
+                          return Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedCareType = type;
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? details['color'].withValues(alpha: 0.15)
+                                      : theme.colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? details['color']
+                                        : theme.colorScheme.outline.withValues(
+                                            alpha: 0.2,
+                                          ),
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                ),
+                                child: Column(
                                   children: [
-                                    Icon(_getCareTypeIcon(careType)),
-                                    const SizedBox(width: AppTheme.spacing_2),
-                                    Text(careType.toString().split('.').last),
+                                    Icon(
+                                      details['icon'],
+                                      color: isSelected
+                                          ? details['color']
+                                          : theme.colorScheme.onSurfaceVariant,
+                                      size: 28,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      type
+                                              .toString()
+                                              .split('.')
+                                              .last[0]
+                                              .toUpperCase() +
+                                          type
+                                              .toString()
+                                              .split('.')
+                                              .last
+                                              .substring(1),
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? details['color']
+                                            : theme.colorScheme.onSurface,
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        fontSize: 12,
+                                      ),
+                                    ),
                                   ],
                                 ),
-                              );
-                            }).toList(),
-                            decoration: const InputDecoration(
-                              labelText: 'Activity Type',
-                            ),
-                          ),
-                          const SizedBox(height: AppTheme.spacing_4),
-                          TextFormField(
-                            readOnly: true,
-                            onTap: () => _selectDate(context),
-                            decoration: InputDecoration(
-                              labelText: 'Activity Date',
-                              hintText: DateFormat.yMMMd().format(
-                                _selectedDate,
                               ),
-                              helperText:
-                                  'Leave blank for current date and time',
-                              suffixIcon: const Icon(LucideIcons.calendar),
                             ),
-                          ),
-                          const SizedBox(height: AppTheme.spacing_4),
-                          TextFormField(
-                            controller: _notesController,
-                            maxLines: 3,
-                            decoration: const InputDecoration(
-                              labelText: 'Notes (optional)',
-                              hintText: 'e.g., Used half-strength fertilizer.',
-                            ),
-                          ),
-                          const SizedBox(height: AppTheme.spacing_6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Flexible(
-                                child: TextButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                    textStyle: Theme.of(
-                                      context,
-                                    ).textTheme.labelLarge,
-                                  ),
-                                  child: const Text('Cancel'),
-                                ),
-                              ),
-                              const SizedBox(width: AppTheme.spacing_2),
-                              Flexible(
-                                child: ElevatedButton(
-                                  onPressed: _submitForm,
-                                  child: const Text('Log Activity'),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppTheme.spacing_4),
-                        ],
+                          );
+                        }).toList(),
                       ),
-                    ),
+                      const SizedBox(height: 32),
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextFormField(
+                              readOnly: true,
+                              onTap: () => _selectDate(context),
+                              controller: TextEditingController(
+                                text: _isToday(_selectedDate)
+                                    ? 'Today, ${DateFormat.yMMMd().format(_selectedDate)}'
+                                    : DateFormat.yMMMd().format(_selectedDate),
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Date',
+                                prefixIcon: const Icon(LucideIcons.calendar),
+                                suffixIcon: const Icon(
+                                  LucideIcons.chevronDown,
+                                  size: 16,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: theme.colorScheme.surface,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _notesController,
+                              maxLines: 3,
+                              decoration: InputDecoration(
+                                labelText: 'Notes',
+                                hintText: 'Any observations?',
+                                alignLabelWithHint: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: theme.colorScheme.surface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _submitForm,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            foregroundColor: theme.colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Log Activity',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: MediaQuery.of(context).viewInsets.bottom + 20,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -270,15 +327,11 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
       ),
     );
   }
-}
 
-IconData _getCareTypeIcon(CareType type) {
-  switch (type) {
-    case CareType.watering:
-      return LucideIcons.droplets;
-    case CareType.fertilizing:
-      return LucideIcons.leaf;
-    case CareType.pruning:
-      return LucideIcons.scissors;
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 }

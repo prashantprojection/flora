@@ -17,6 +17,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       routerConfig: router,
       title: 'Flora',
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
     );
   }
