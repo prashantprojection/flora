@@ -59,7 +59,7 @@ class _SupportScreenState extends State<SupportScreen> {
             Image.asset('assets/logo.png', height: 120),
             const SizedBox(height: 16),
             Text(
-              'Join Our Mission for a Greener Earth',
+              'Support the Developer',
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,
@@ -67,7 +67,7 @@ class _SupportScreenState extends State<SupportScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Flora is a labor of love, dedicated to every plant parent. Your generous support helps us plant real trees worldwide and keeps this community growing. Together, we can make a difference—one leaf at a time.',
+              'Flora is a labor of love, dedicated to providing you the best plant care experience. Your support helps me keep improving the app and adding new features for free.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 height: 1.5,
@@ -76,89 +76,100 @@ class _SupportScreenState extends State<SupportScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Stripe Donation Card
+            // Buy Me a Coffee Card
             Card(
-              elevation: 2,
+              elevation: 4,
+              shadowColor: const Color(0xFFFFDD00).withAlpha(40),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: Theme.of(context).colorScheme.primary.withAlpha(10),
-                ),
+                side: const BorderSide(color: Color(0xFFFFDD00), width: 1),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF635BFF).withAlpha(10),
-                            borderRadius: BorderRadius.circular(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white,
+                      const Color(0xFFFFDD00).withAlpha(20),
+                    ],
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFDD00),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              LucideIcons.coffee,
+                              color: Colors.black87,
+                              size: 24,
+                            ),
                           ),
-                          child: const Icon(
-                            LucideIcons.globe,
-                            color: Color(0xFF635BFF),
-                            size: 24,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Buy Me a Coffee',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Support via Card or PayPal',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'International Donation',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Secure payment via Stripe',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'If you enjoy using Flora, consider buying me a coffee! It helps keep the servers running.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFDD00),
+                            foregroundColor: Colors.black87,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'You can choose your own contribution amount on the secure payment page.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF635BFF),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        onPressed: () {
-                          // TODO: PASTE YOUR NEW "PAY WHAT YOU WANT" STRIPE LINK HERE
-                          _launchURL(
-                            'https://donate.stripe.com/test_3cI5kxf3DcZ3faGd9m8g001',
-                          );
-                        },
-                        icon: const Icon(LucideIcons.heart, size: 20),
-                        label: const Text(
-                          'Donate via Stripe',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                          onPressed: () {
+                            _launchURL(
+                              'https://www.buymeacoffee.com/nemi_nemesis',
+                            );
+                          },
+                          icon: const Icon(LucideIcons.coffee, size: 20),
+                          label: const Text(
+                            'Buy Me a Coffee',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
