@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -104,6 +105,23 @@ class CareHistoryList extends StatelessWidget {
                                 '${DateFormat.yMMMMd().format(event.date)} (${_formatDistanceToNow(event.date)})',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
+                              if (event.photoUrl != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.file(
+                                      File(event.photoUrl!),
+                                      height: 120,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return const SizedBox.shrink();
+                                          },
+                                    ),
+                                  ),
+                                ),
                               if (event.notes != null &&
                                   event.notes!.isNotEmpty)
                                 Padding(
@@ -155,6 +173,12 @@ class CareHistoryList extends StatelessWidget {
           'icon': LucideIcons.scissors,
           'label': 'Pruned',
           'color': Colors.orange,
+        };
+      case CareType.skipped:
+        return {
+          'icon': LucideIcons.skipForward,
+          'label': 'Skipped',
+          'color': Colors.grey,
         };
     }
   }

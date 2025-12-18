@@ -1,4 +1,4 @@
-package com.wingsandwallets.verdant_vista
+package com.wingsandwallets.flora
 
 import io.flutter.embedding.android.FlutterActivity
 

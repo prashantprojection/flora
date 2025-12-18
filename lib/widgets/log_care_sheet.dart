@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/care_event.dart';
@@ -22,6 +24,7 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
   CareType _selectedCareType = CareType.watering;
   DateTime _selectedDate = DateTime.now();
   final _notesController = TextEditingController();
+  String? _photoPath;
 
   @override
   void dispose() {
@@ -47,6 +50,16 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.camera);
+    if (image != null) {
+      setState(() {
+        _photoPath = image.path;
+      });
+    }
+  }
+
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
       final newCareEvent = CareEvent(
@@ -54,6 +67,7 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
         type: _selectedCareType,
         date: _selectedDate,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
+        photoUrl: _photoPath,
       );
 
       ref
@@ -94,6 +108,12 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
           'icon': LucideIcons.scissors,
           'label': 'Pruned',
           'color': Colors.orange,
+        };
+      case CareType.skipped:
+        return {
+          'icon': LucideIcons.skipForward,
+          'label': 'Skipped',
+          'color': Colors.grey,
         };
     }
   }
@@ -286,6 +306,82 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
                                 ),
                                 filled: true,
                                 fillColor: theme.colorScheme.surface,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            // Photo Picker Section
+                            GestureDetector(
+                              onTap: _pickImage,
+                              child: Container(
+                                height: 120, // Reduced from 150
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: theme.colorScheme.outline.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                    style: BorderStyle.solid,
+                                  ),
+                                  image: _photoPath != null
+                                      ? DecorationImage(
+                                          image: FileImage(File(_photoPath!)),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                                ),
+                                child: _photoPath == null
+                                    ? Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            LucideIcons.camera,
+                                            size: 32,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Add a photo (optional)',
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
+                                        ],
+                                      )
+                                    : Stack(
+                                        children: [
+                                          Positioned(
+                                            top: 8,
+                                            right: 8,
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  _photoPath = null;
+                                                });
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.all(
+                                                  4,
+                                                ),
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.black54,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  LucideIcons.x,
+                                                  color: Colors.white,
+                                                  size: 16,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                               ),
                             ),
                           ],

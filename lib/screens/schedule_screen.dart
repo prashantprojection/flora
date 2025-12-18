@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/care_event.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/providers/plant_provider.dart';
+import 'package:flora/screens/plant_detail_screen.dart';
 
 class ScheduleScreen extends ConsumerStatefulWidget {
   const ScheduleScreen({super.key});
@@ -82,14 +84,111 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                       );
                       // Actionable if selected date is today or in the past
                       final isActionable = !selected.isAfter(today);
+                      final task = tasksForSelectedDate[index];
 
-                      return ScheduleTaskCard(
-                        task: tasksForSelectedDate[index],
-                        onComplete: isActionable
-                            ? () => _handleTaskCompletion(
-                                tasksForSelectedDate[index],
-                              )
-                            : null,
+                      return Dismissible(
+                        key: ValueKey(
+                          '${task.plantId}_${task.type}_${task.dueDate}',
+                        ),
+                        direction: isActionable
+                            ? DismissDirection.horizontal
+                            : DismissDirection.none,
+                        background: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.only(left: 20),
+                          child: const Row(
+                            children: [
+                              Icon(LucideIcons.check, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text(
+                                'Mark Done',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        secondaryBackground: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.orange,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Snooze',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(LucideIcons.clock, color: Colors.white),
+                            ],
+                          ),
+                        ),
+                        confirmDismiss: (direction) async {
+                          if (direction == DismissDirection.startToEnd) {
+                            // Mark Done
+                            final completed = await _handleTaskCompletion(task);
+                            return completed;
+                          } else {
+                            // Snooze
+                            ref
+                                .read(plantListProvider.notifier)
+                                .snoozePlant(task.plantId, type: task.type);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Snoozed for 1 day'),
+                              ),
+                            );
+                            return true; // Remove from list
+                          }
+                        },
+                        child: ScheduleTaskCard(
+                          task: task,
+                          onComplete: isActionable
+                              ? () => _handleTaskCompletion(task)
+                              : null,
+                          onSnooze: isActionable
+                              ? () {
+                                  ref
+                                      .read(plantListProvider.notifier)
+                                      .snoozePlant(
+                                        task.plantId,
+                                        type: task.type,
+                                      );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Snoozed for 1 day'),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          onSkip: isActionable
+                              ? () {
+                                  ref
+                                      .read(plantListProvider.notifier)
+                                      .skipPlant(task.plantId, type: task.type);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Skipped this cycle'),
+                                    ),
+                                  );
+                                }
+                              : null,
+                        ),
                       );
                     },
                   ),
@@ -135,14 +234,12 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                 border: Border.all(
                   color: isSelected
                       ? theme.colorScheme.primary
-                      : theme.colorScheme.outline.withValues(alpha: 0.2),
+                      : theme.colorScheme.outline.withOpacity(0.2),
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.3,
-                          ),
+                          color: theme.colorScheme.primary.withOpacity(0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -190,8 +287,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                       height: 4,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? theme.colorScheme.onPrimary.withValues(alpha: 0.5)
-                            : theme.colorScheme.primary.withValues(alpha: 0.5),
+                            ? theme.colorScheme.onPrimary.withOpacity(0.5)
+                            : theme.colorScheme.primary.withOpacity(0.5),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -218,15 +315,15 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.3,
+                color: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                  0.3,
                 ),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 LucideIcons.calendarCheck2,
                 size: 48,
-                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                color: theme.colorScheme.primary.withOpacity(0.5),
               ),
             ),
             const SizedBox(height: 24),
@@ -255,83 +352,153 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final normalizedSelected = DateTime(date.year, date.month, date.day);
 
     for (final plant in plants) {
-      // Normalize plant dates to ignore time components
-      final normalizedNext = DateTime(
-        plant.nextWatering.year,
-        plant.nextWatering.month,
-        plant.nextWatering.day,
+      // 1. Check Watering (Default)
+      _checkAndAddTask(
+        tasks,
+        plant,
+        CareType.watering,
+        plant.nextWatering,
+        plant.lastWatered,
+        plant.wateringFrequency ?? 7,
+        normalizedSelected,
+        date,
       );
-      final normalizedLast = DateTime(
-        plant.lastWatered.year,
-        plant.lastWatered.month,
-        plant.lastWatered.day,
-      );
 
-      // Infer frequency
-      final frequency = normalizedNext.difference(normalizedLast).inDays;
-
-      if (frequency <= 0) {
-        continue;
-      } // Avoid division by zero or negative frequency
-
-      // Calculate difference from the *next* scheduled watering
-      final daysFromNext = normalizedSelected.difference(normalizedNext).inDays;
-
-      // Check if the selected date is the next watering date OR a future recurrence
-      if (daysFromNext >= 0 && daysFromNext % frequency == 0) {
-        tasks.add(
-          UpcomingCareTask(
-            plantId: plant.id,
-            plantName: plant.name,
-            plantImage: plant.imageUrl,
-            type: CareType.watering,
-            dueDate:
-                date, // The due date for *this* recurrence is the selected date
-          ),
+      // 2. Check Additional Schedules
+      for (final schedule in plant.careSchedules) {
+        _checkAndAddTask(
+          tasks,
+          plant,
+          schedule.type,
+          schedule.nextDate,
+          schedule.lastDate,
+          schedule.frequency,
+          normalizedSelected,
+          date,
         );
       }
     }
     return tasks;
   }
 
+  void _checkAndAddTask(
+    List<UpcomingCareTask> tasks,
+    Plant plant,
+    CareType type,
+    DateTime nextDate,
+    DateTime lastDate,
+    int frequency,
+    DateTime normalizedSelected,
+    DateTime originalSelectedDate,
+  ) {
+    // Normalize dates
+    final normalizedNext = DateTime(
+      nextDate.year,
+      nextDate.month,
+      nextDate.day,
+    );
+
+    // Check if the selected date is the next due date OR a future recurrence
+    // We only show tasks that are due ON or BEFORE the selected date (visual history)
+    // For future dates (daysFromNext < 0), we hide them (Snoozed tasks fall here for the original date).
+    final daysFromNext = normalizedSelected.difference(normalizedNext).inDays;
+
+    if (daysFromNext >= 0 && daysFromNext % frequency == 0) {
+      // Check if Completed OR Skipped on this date
+      final isCompleted = plant.careHistory.any(
+        (event) =>
+            (event.type == type || event.type == CareType.skipped) &&
+            _isSameDay(event.date, normalizedSelected),
+      );
+
+      tasks.add(
+        UpcomingCareTask(
+          plantId: plant.id,
+          plantName: plant.name,
+          plantImage: plant.imageUrl,
+          type: type,
+          dueDate: originalSelectedDate, // Use the visual date
+          isCompleted: isCompleted,
+        ),
+      );
+    }
+  }
+
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  void _handleTaskCompletion(UpcomingCareTask task) {
+  Future<bool> _handleTaskCompletion(UpcomingCareTask task) async {
     final plant = ref
         .read(plantListProvider)
         .firstWhere((p) => p.id == task.plantId);
     final today = DateTime.now();
 
-    // Check if *currently* visible task is for strictly today, allow completing it.
-    // Or if it's a past due task.
-    // For future tasks, maybe we want to allow "early" completion?
-    // For now, let's just log it as done *now*.
-
-    // Simple check to prevent double logging for the exact same day if button is spammed
+    // Prevent double logging
     final hasBeenLoggedToday = plant.careHistory.any(
       (event) => event.type == task.type && _isSameDay(event.date, today),
     );
 
-    if (!hasBeenLoggedToday) {
-      ref
-          .read(plantListProvider.notifier)
-          .addCareEvent(
-            task.plantId,
-            CareEvent(
-              id: DateTime.now().toString(),
-              type: task.type,
-              date: DateTime.now(),
-            ),
-          );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Marked ${task.plantName} as watered'),
-          behavior: SnackBarBehavior.floating,
+    if (hasBeenLoggedToday) return true;
+
+    // Show dialog to ask for photo
+    final shouldTakePhoto = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        title: const Text('Great job!'),
+        content: const Text(
+          'Would you like to add a photo to your growth journal?',
         ),
-      );
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No, just log it'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(LucideIcons.camera),
+            label: const Text('Take Photo'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldTakePhoto == null) return false; // Dismissed -> Cancel
+
+    String? photoPath;
+
+    if (shouldTakePhoto) {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.camera);
+      if (image != null) {
+        photoPath = image.path;
+      }
     }
+
+    if (!mounted) return false;
+
+    ref
+        .read(plantListProvider.notifier)
+        .addCareEvent(
+          task.plantId,
+          CareEvent(
+            id: DateTime.now().toString(),
+            type: task.type,
+            date: DateTime.now(),
+            photoUrl: photoPath,
+          ),
+        );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Marked ${task.plantName} as ${task.type.name}${photoPath != null ? " with a photo!" : ""}',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return true;
   }
 }
 
@@ -341,6 +508,7 @@ class UpcomingCareTask {
   final String? plantImage;
   final CareType type;
   final DateTime dueDate;
+  final bool isCompleted;
 
   UpcomingCareTask({
     required this.plantId,
@@ -348,17 +516,22 @@ class UpcomingCareTask {
     this.plantImage,
     required this.type,
     required this.dueDate,
+    this.isCompleted = false,
   });
 }
 
 class ScheduleTaskCard extends StatelessWidget {
   final UpcomingCareTask task;
   final VoidCallback? onComplete;
+  final VoidCallback? onSnooze;
+  final VoidCallback? onSkip;
 
   const ScheduleTaskCard({
     super.key,
     required this.task,
     required this.onComplete,
+    this.onSnooze,
+    this.onSkip,
   });
 
   @override
@@ -417,13 +590,26 @@ class ScheduleTaskCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Flexible(
-                    child: Text(
-                      task.plantName,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    child: GestureDetector(
+                      onTap: () {
+                        // Navigation to Plant Detail
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                PlantDetailScreen(plantId: task.plantId),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        task.plantName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                          decorationStyle: TextDecorationStyle.dotted,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -436,11 +622,16 @@ class ScheduleTaskCard extends StatelessWidget {
                         color: isActionable ? details['color'] : Colors.grey,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        details['label'],
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: isActionable ? details['color'] : Colors.grey,
-                          fontWeight: FontWeight.bold,
+                      Flexible(
+                        child: Text(
+                          details['label'],
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isActionable
+                                ? details['color']
+                                : Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -448,30 +639,71 @@ class ScheduleTaskCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 8), // Reduced spacing
             // Action Button
-            ElevatedButton(
-              onPressed: onComplete,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: details['color'].withValues(alpha: 0.1),
-                foregroundColor: details['color'],
-                disabledBackgroundColor: Colors.grey.shade200,
-                disabledForegroundColor: Colors.grey,
-                elevation: 0,
-                minimumSize: const Size(
-                  0,
-                  40,
-                ), // Override global infinite width
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            if (isActionable)
+              ElevatedButton(
+                onPressed: task.isCompleted
+                    ? null
+                    : (isActionable ? onComplete : null),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: details['color'].withValues(alpha: 0.1),
+                  foregroundColor: details['color'],
+                  elevation: 0,
+                  minimumSize: const Size(0, 36), // Compact height
+                  tapTargetSize:
+                      MaterialTapTargetSize.shrinkWrap, // Compact touch
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                child: Text(
+                  task.isCompleted
+                      ? 'Done'
+                      : (isActionable ? 'Done' : 'Scheduled'),
+                  style: const TextStyle(fontSize: 12),
                 ),
               ),
-              child: Text(isActionable ? 'Done' : 'Scheduled'),
-            ),
+            if (!task.isCompleted && isActionable) ...[
+              const SizedBox(width: 0), // Tight spacing
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                iconSize: 20,
+                onSelected: (value) {
+                  if (value == 'snooze') {
+                    onSnooze?.call();
+                  } else if (value == 'skip') {
+                    onSkip?.call();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'snooze',
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.clock, size: 16),
+                        SizedBox(width: 8),
+                        Text('Snooze (1 day)'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'skip',
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.skipForward, size: 16),
+                        SizedBox(width: 8),
+                        Text('Skip this cycle'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -500,6 +732,12 @@ class ScheduleTaskCard extends StatelessWidget {
           'icon': LucideIcons.scissors,
           'label': 'Prune',
           'color': Colors.orange,
+        };
+      case CareType.skipped:
+        return {
+          'icon': LucideIcons.skipForward,
+          'label': 'Skipped',
+          'color': Colors.grey,
         };
     }
   }

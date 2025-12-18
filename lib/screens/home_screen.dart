@@ -6,17 +6,53 @@ import 'package:flora/providers/plant_provider.dart';
 import 'package:flora/widgets/plant_card.dart';
 import 'package:flora/widgets/add_plant_sheet.dart';
 
-class HomeScreen extends ConsumerWidget {
+import 'package:flora/api/notification_service.dart';
+
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
-  Map<String, dynamic> _getWateringStatus(Plant plant) {
-    final daysUntilNextWatering = plant.nextWatering
-        .difference(DateTime.now())
-        .inDays;
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Request permissions and schedule reminders after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notificationService = ref.read(notificationServiceProvider);
+      notificationService.requestPermissions();
+      notificationService.scheduleDailyReminder();
+    });
+  }
+
+  DateTime _startOfDay(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  Map<String, dynamic> _getCareStatus(Plant plant) {
+    final now = DateTime.now();
+    final today = _startOfDay(now);
+
+    // Check Watering
+    final nextWatering = _startOfDay(plant.nextWatering);
+    int minDaysUsingWatering = nextWatering.difference(today).inDays;
+
+    // Check other schedules
+    for (final schedule in plant.careSchedules) {
+      final nextSchedule = _startOfDay(schedule.nextDate);
+      final diff = nextSchedule.difference(today).inDays;
+      if (diff < minDaysUsingWatering) {
+        minDaysUsingWatering = diff;
+      }
+    }
 
     return {
-      'needsWater': daysUntilNextWatering <= 0,
-      'overdue': daysUntilNextWatering <= 0 ? daysUntilNextWatering.abs() : 0,
+      // Needs care if any task is due today (0) or overdue (< 0)
+      'needsCare': minDaysUsingWatering <= 0,
+      'overdue': minDaysUsingWatering < 0 ? minDaysUsingWatering.abs() : 0,
+      'daysUntil': minDaysUsingWatering,
     };
   }
 
@@ -28,20 +64,18 @@ class HomeScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final plants = ref.watch(plantListProvider);
     final theme = Theme.of(context);
     final isLargeScreen = MediaQuery.of(context).size.width > 600;
 
-    final plantsNeedingWater =
-        plants.where((p) => _getWateringStatus(p)['needsWater']).toList()..sort(
-          (a, b) =>
-              _getWateringStatus(b)['overdue'] -
-              _getWateringStatus(a)['overdue'],
+    final plantsNeedingCare =
+        plants.where((p) => _getCareStatus(p)['needsCare']).toList()..sort(
+          (a, b) => _getCareStatus(b)['overdue'] - _getCareStatus(a)['overdue'],
         );
 
     final otherPlants = plants
-        .where((p) => !_getWateringStatus(p)['needsWater'])
+        .where((p) => !_getCareStatus(p)['needsCare'])
         .toList();
 
     return Scaffold(
@@ -123,16 +157,22 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          builder: (context) => const AddPlantSheet(),
-                        );
-                      },
-                      label: const Text('Add Plant'),
-                      icon: const Icon(LucideIcons.plus),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (context) => const AddPlantSheet(),
+                            );
+                          },
+                          label: const Text('Add Plant'),
+                          icon: const Icon(LucideIcons.plus),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -151,7 +191,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            if (plantsNeedingWater.isNotEmpty) ...[
+            if (plantsNeedingCare.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -181,7 +221,7 @@ class HomeScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '${plantsNeedingWater.length}',
+                          '${plantsNeedingCare.length}',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.error,
                             fontWeight: FontWeight.bold,
@@ -198,13 +238,13 @@ class HomeScreen extends ConsumerWidget {
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: plantsNeedingWater.length,
+                    itemCount: plantsNeedingCare.length,
                     itemBuilder: (context, index) {
                       return SizedBox(
                         width: 300,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: PlantCard(plant: plantsNeedingWater[index]),
+                          child: PlantCard(plant: plantsNeedingCare[index]),
                         ),
                       );
                     },
@@ -228,7 +268,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      plantsNeedingWater.isNotEmpty
+                      plantsNeedingCare.isNotEmpty
                           ? 'Thriving Plants'
                           : 'Your Collection',
                       style: theme.textTheme.titleMedium?.copyWith(

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flora/models/care_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +9,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/providers/plant_provider.dart';
 import 'package:flora/utils/app_theme.dart';
+import 'package:flora/api/gemini_service.dart';
 import 'package:uuid/uuid.dart';
 
 class AddPlantSheet extends ConsumerStatefulWidget {
@@ -25,11 +27,15 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
   final _locationController = TextEditingController();
   final _dateController = TextEditingController();
   final _wateringScheduleController = TextEditingController(text: '7');
+  final _fertilizingScheduleController = TextEditingController();
+  final _pruningScheduleController = TextEditingController();
+  final _careInstructionsController = TextEditingController();
   DateTime? _selectedDate;
-  File? _selectedImageFile; // Changed name to avoid confusion
-  String? _initialImageUrl; // To store the initial image URL/path
+  File? _selectedImageFile;
+  String? _initialImageUrl;
 
   bool _isSaveEnabled = false;
+  bool _isGeneratingSuggestions = false;
 
   @override
   void initState() {
@@ -40,23 +46,37 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
       _locationController.text = widget.plant!.location ?? '';
       _selectedDate = widget.plant!.plantingDate;
       _dateController.text = DateFormat.yMMMd().format(_selectedDate!);
-      if (widget.plant!.nextWatering
-              .difference(widget.plant!.lastWatered)
-              .inDays >
-          0) {
-        _wateringScheduleController.text = widget.plant!.nextWatering
-            .difference(widget.plant!.lastWatered)
-            .inDays
+
+      // Watering (Migration/Fallback logic is in Plant model now, but safe to default)
+      if (widget.plant!.wateringFrequency != null) {
+        _wateringScheduleController.text = widget.plant!.wateringFrequency
             .toString();
       }
 
-      _initialImageUrl =
-          widget.plant!.imageUrl; // Store the original image URL/path
+      // Load specific schedules
+      final fertilizing = widget.plant!.careSchedules
+          .where((s) => s.type == CareType.fertilizing)
+          .firstOrNull;
+      if (fertilizing != null) {
+        _fertilizingScheduleController.text = fertilizing.frequency.toString();
+      }
+
+      final pruning = widget.plant!.careSchedules
+          .where((s) => s.type == CareType.pruning)
+          .firstOrNull;
+      if (pruning != null) {
+        _pruningScheduleController.text = pruning.frequency.toString();
+      }
+
+      _initialImageUrl = widget.plant!.imageUrl;
+      if (widget.plant!.careInstructions != null) {
+        _careInstructionsController.text = widget.plant!.careInstructions!;
+      }
     }
     _nameController.addListener(_validateForm);
     _dateController.addListener(_validateForm);
     _wateringScheduleController.addListener(_validateForm);
-    _validateForm(); // Initial validation
+    _validateForm();
   }
 
   @override
@@ -69,6 +89,9 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
     _locationController.dispose();
     _dateController.dispose();
     _wateringScheduleController.dispose();
+    _fertilizingScheduleController.dispose();
+    _pruningScheduleController.dispose();
+    _careInstructionsController.dispose();
     super.dispose();
   }
 
@@ -90,7 +113,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
     if (pickedFile != null) {
       setState(() {
         _selectedImageFile = File(pickedFile.path);
-        _initialImageUrl = null; // Clear initial URL if a new image is picked
+        _initialImageUrl = null;
       });
       _validateForm();
     }
@@ -115,12 +138,87 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
     }
   }
 
+  Future<void> _getAiSuggestions() async {
+    if (_nameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a plant name first.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isGeneratingSuggestions = true;
+    });
+
+    try {
+      final geminiService = ref.read(geminiServiceProvider);
+      final recommendations = await geminiService.getPlantCareRecommendations(
+        plantName: _nameController.text,
+        species: _speciesController.text,
+        location: _locationController.text,
+      );
+
+      if (mounted) {
+        setState(() {
+          _wateringScheduleController.text = recommendations['frequency']
+              .toString();
+          _careInstructionsController.text = recommendations['advice'];
+        });
+        _validateForm();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to get suggestions: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingSuggestions = false;
+        });
+      }
+    }
+  }
+
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
       final String id = widget.plant?.id ?? const Uuid().v4();
       final String? imageUrl = _selectedImageFile?.path ?? _initialImageUrl;
       final int wateringDays = int.parse(_wateringScheduleController.text);
       final DateTime lastWatered = widget.plant?.lastWatered ?? _selectedDate!;
+
+      // Handle additional schedules
+      final List<CareSchedule> schedules = [];
+
+      // Helper to add/update schedule
+      void addSchedule(TextEditingController controller, CareType type) {
+        if (controller.text.isNotEmpty) {
+          final int? days = int.tryParse(controller.text);
+          if (days != null && days > 0) {
+            // Check if we are editing an existing schedule to preserve lastDate
+            final existing = widget.plant?.careSchedules
+                .where((s) => s.type == type)
+                .firstOrNull;
+
+            final lastDate = existing?.lastDate ?? _selectedDate!;
+            // Recalculate next date based on new frequency and last date
+            final nextDate = lastDate.add(Duration(days: days));
+
+            schedules.add(
+              CareSchedule(
+                type: type,
+                frequency: days,
+                lastDate: lastDate,
+                nextDate: nextDate,
+              ),
+            );
+          }
+        }
+      }
+
+      addSchedule(_fertilizingScheduleController, CareType.fertilizing);
+      addSchedule(_pruningScheduleController, CareType.pruning);
 
       final Plant plant = Plant(
         id: id,
@@ -133,7 +231,12 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
         location: _locationController.text,
         lastWatered: lastWatered,
         nextWatering: lastWatered.add(Duration(days: wateringDays)),
+        wateringFrequency: wateringDays,
+        careInstructions: _careInstructionsController.text.isEmpty
+            ? null
+            : _careInstructionsController.text,
         careHistory: widget.plant?.careHistory ?? [],
+        careSchedules: schedules,
       );
 
       if (widget.plant == null) {
@@ -335,6 +438,44 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
                             const SizedBox(height: 24),
 
                             _buildSectionLabel(context, 'Care Details'),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: TextButton.icon(
+                                onPressed: _isGeneratingSuggestions
+                                    ? null
+                                    : _getAiSuggestions,
+                                icon: _isGeneratingSuggestions
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Icon(
+                                        LucideIcons.sparkles,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                label: Text(
+                                  _isGeneratingSuggestions
+                                      ? 'Asking Gemini...'
+                                      : 'Auto-Suggest Schedule & Tips',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  backgroundColor: theme
+                                      .colorScheme
+                                      .primaryContainer
+                                      .withValues(alpha: 0.3),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
                             const SizedBox(height: 16),
                             Row(
                               children: [
@@ -388,6 +529,54 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
                                 if (n == null || n <= 0) return 'Invalid';
                                 return null;
                               },
+                            ),
+                            const SizedBox(height: 16),
+                            // Advanced Schedules
+                            ExpansionTile(
+                              title: Text(
+                                'Advanced Schedules',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              shape: const Border(),
+                              collapsedShape: const Border(),
+                              children: [
+                                const SizedBox(height: 8),
+                                TextFormField(
+                                  controller: _fertilizingScheduleController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: _buildInputDecoration(
+                                    context,
+                                    label: 'Fertilize Every (days)',
+                                    hint: 'Optional, e.g., 30',
+                                    icon: LucideIcons.flaskConical,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  controller: _pruningScheduleController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: _buildInputDecoration(
+                                    context,
+                                    label: 'Prune Every (days)',
+                                    hint: 'Optional, e.g., 90',
+                                    icon: LucideIcons.scissors,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                            ),
+                            TextFormField(
+                              controller: _careInstructionsController,
+                              maxLines: 4,
+                              decoration: _buildInputDecoration(
+                                context,
+                                label: 'Care Instructions / Advice',
+                                hint:
+                                    'Seasonal tips and general advice will appear here...',
+                                icon: LucideIcons.info,
+                              ),
                             ),
                           ],
                         ),

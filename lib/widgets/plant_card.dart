@@ -167,16 +167,29 @@ class PlantCard extends StatelessWidget {
     );
   }
 
-  Map<String, dynamic> _getWateringStatus(Plant plant) {
-    final daysUntilNextWatering = plant.nextWatering
-        .difference(DateTime.now())
-        .inDays;
+  DateTime _startOfDay(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
 
-    if (daysUntilNextWatering <= 0) {
+  Map<String, dynamic> _getWateringStatus(Plant plant) {
+    final now = DateTime.now();
+    final today = _startOfDay(now);
+    final next = _startOfDay(plant.nextWatering);
+    final daysUntilNextWatering = next.difference(today).inDays;
+
+    if (daysUntilNextWatering < 0) {
       return {
         'text': 'Water now! Overdue by ${daysUntilNextWatering.abs()} days',
         'needsWater': true,
         'days': daysUntilNextWatering.abs(),
+        'color': Colors.red,
+        'icon': LucideIcons.droplets,
+      };
+    } else if (daysUntilNextWatering == 0) {
+      return {
+        'text': 'Water today',
+        'needsWater': true,
+        'days': 0,
         'color': Colors.red,
         'icon': LucideIcons.droplets,
       };
