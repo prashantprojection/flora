@@ -159,6 +159,14 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
       );
 
       if (mounted) {
+        if (recommendations['isValid'] == false) {
+          setState(() {
+            _isGeneratingSuggestions = false;
+          });
+          _showInvalidPlantDialog(_nameController.text);
+          return;
+        }
+
         setState(() {
           _wateringScheduleController.text = recommendations['frequency']
               .toString();
@@ -179,6 +187,24 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
         });
       }
     }
+  }
+
+  void _showInvalidPlantDialog(String name) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Plant Not Recognized'),
+        content: Text(
+          'We couldn\'t identify "$name" as a known plant.\n\nPlease check the spelling or enter details manually.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _submitForm() {

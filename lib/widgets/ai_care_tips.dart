@@ -96,7 +96,7 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
           Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
-              initiallyExpanded: true,
+              initiallyExpanded: false,
               tilePadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 8,
@@ -137,18 +137,36 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.7),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: Icon(
+                      child: const Icon(
                         LucideIcons.sparkles,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Colors.white,
                         size: 20,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,6 +176,7 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
+                          const SizedBox(height: 2),
                           Text(
                             'Ask specific questions or get more tips',
                             style: Theme.of(context).textTheme.bodySmall,

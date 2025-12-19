@@ -1,0 +1,25 @@
+﻿Analyzing 3 items...                                            
+
+  error - 'GeminiContentGenerator.isProcessing' ('bool Function()') isn't a valid override of 'ContentGenerator.isProcessing' ('ValueListenable<bool> Function()') - lib\utils\gemini_content_generator.dart:47:12 - invalid_override
+warning - Unused import: 'package:flora/api/gemini_service.dart' - lib\widgets\ai_care_tips.dart:4:8 - unused_import
+warning - Unused import: 'package:intl/intl.dart' - lib\widgets\ai_care_tips.dart:7:8 - unused_import
+   info - The private field _heights could be 'final' - lib\widgets\ai_care_tips.dart:297:20 - prefer_final_fields
+   info - Statements in an if should be enclosed in a block - lib\widgets\ai_care_tips.dart:316:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\widgets\ai_care_tips.dart:318:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\widgets\ai_care_tips.dart:320:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\widgets\ai_care_tips.dart:322:7 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai_care_tips.dart:469:38 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - lib\widgets\ai_care_tips.dart:537:9 - use_super_parameters
+   info - Invalid use of a private type in a public API - lib\widgets\ai_care_tips.dart:541:3 - library_private_types_in_public_api
+   info - Parameter 'key' could be a super parameter - lib\widgets\ai_care_tips.dart:557:9 - use_super_parameters
+
+flutter : 12 issues found. (ran in 1.6s)
+At line:1 char:1
++ flutter analyze lib/widgets/genui_catalog.dart 
+lib/utils/gemini_conte ...
++ 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (12 issues found. (ran in 
+1    .6s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

@@ -101,24 +101,28 @@ Respond in Markdown format with the following structure:
     String? species,
     required String location,
   }) async {
-    String prompt =
-        '''
+    final int month = DateTime.now().month;
+
+    String prompt = '''
 You are a plant care expert. I am adding a new plant to my collection.
 Name: "$plantName"
 Species: "${species ?? 'Unknown'}"
 Location: "$location"
-Current Month: ${DateTime.now().month}
+Current Month: $month
 
-Please recommend:
-1. Watering frequency (in days) for this season.
-2. Comprehensive care advice for EACH season (Spring, Summer, Autumn, Winter). Include specific details on watering adjustments, light requirements, and potential issues. Limit to 3-4 sentences per season for depth.
+First, evaluate if "$plantName" (contextualized by species if provided) is a legitimate plant name.
+- Valid Examples: "Rose", "Snake Plant", "Ficus", "Monstera", "Tomato".
+- Invalid Examples: "Table", "Laptop", "Unicorn", "asdf", "kjsdhf".
+
+If INVALID, set "isValid" to false.
 
 Respond STRICTLY in this JSON format:
 {
-  "frequency": [integer],
+  "isValid": boolean,
+  "frequency": integer,
   "advice": "Spring: [Tip]\\nSummer: [Tip]\\nAutumn: [Tip]\\nWinter: [Tip]"
 }
-Do not include markdown formatting like ```json or ```. Just the raw JSON string.
+Do not include markdown formatting like ```json. Just the raw JSON string.
 ''';
 
     final content = [Content.text(prompt)];
@@ -128,12 +132,20 @@ Do not include markdown formatting like ```json or ```. Just the raw JSON string
 
     try {
       final Map<String, dynamic> data = jsonDecode(text);
+      final bool isValid = data['isValid'] == true;
+
+      if (!isValid) {
+        return {'isValid': false};
+      }
+
       return {
+        'isValid': true,
         'frequency': data['frequency'] is int ? data['frequency'] : 7,
         'advice': data['advice'] ?? 'No specific advice generated.',
       };
     } catch (e) {
       return {
+        'isValid': true,
         'frequency': 7,
         'advice':
             'Could not generate specific advice. Water when topsoil is dry.',
