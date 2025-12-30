@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
@@ -15,8 +14,16 @@ class GeminiService {
     if (apiKey == null) {
       throw Exception('GEMINI_API_KEY not found in .env file.');
     }
-    _textModel = GenerativeModel(model: 'gemini-2.5-flash', apiKey: apiKey);
-    _visionModel = GenerativeModel(model: 'gemini-2.5-flash', apiKey: apiKey);
+    _textModel = GenerativeModel(
+      model: 'gemini-2.5-flash',
+      apiKey: apiKey,
+      generationConfig: GenerationConfig(temperature: 0.4),
+    );
+    _visionModel = GenerativeModel(
+      model: 'gemini-2.5-flash',
+      apiKey: apiKey,
+      generationConfig: GenerationConfig(temperature: 0.4),
+    );
   }
 
   Future<String> generateCareTips({
@@ -103,7 +110,8 @@ Respond in Markdown format with the following structure:
   }) async {
     final int month = DateTime.now().month;
 
-    String prompt = '''
+    String prompt =
+        '''
 You are a plant care expert. I am adding a new plant to my collection.
 Name: "$plantName"
 Species: "${species ?? 'Unknown'}"
@@ -115,6 +123,15 @@ First, evaluate if "$plantName" (contextualized by species if provided) is a leg
 - Invalid Examples: "Table", "Laptop", "Unicorn", "asdf", "kjsdhf".
 
 If INVALID, set "isValid" to false.
+
+If VALID:
+1. Analyze the "Location".
+   - If implies Outdoor (e.g., Garden, Patio, Balcony, Backyard), suggest higher watering frequency (typically 2-4 days) based on exposure.
+   - If implies Indoor (e.g., Living Room, Bedroom, Office), suggest standard indoor frequency (typically 7-14 days).
+2. "frequency": Return an INTEGER representing days between watering.
+   - Do NOT return '1' (daily) unless it is strictly necessary (e.g., aquatic plant, seedling in heat).
+   - For most indoor plants, 7 is a safe average.
+   - Be consistent with standard care guides.
 
 Respond STRICTLY in this JSON format:
 {
@@ -138,9 +155,16 @@ Do not include markdown formatting like ```json. Just the raw JSON string.
         return {'isValid': false};
       }
 
+      int frequency = 7; // Default
+      if (data['frequency'] is int) {
+        frequency = data['frequency'];
+      } else if (data['frequency'] is String) {
+        frequency = int.tryParse(data['frequency']) ?? 7;
+      }
+
       return {
         'isValid': true,
-        'frequency': data['frequency'] is int ? data['frequency'] : 7,
+        'frequency': frequency,
         'advice': data['advice'] ?? 'No specific advice generated.',
       };
     } catch (e) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:flora/utils/network_utils.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -21,6 +22,21 @@ class _SupportScreenState extends State<SupportScreen> {
   }
 
   Future<void> _launchURL(String urlString) async {
+    // 1. GATEKEEPER: Check Internet
+    // Note: UPI intents might work offline if the app is already installed and has cached data,
+    // but generally payment flows require internet. A check here is safer.
+    final hasInternet = await NetworkUtils.hasInternetConnection();
+    if (!hasInternet) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("No internet connection available."),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     final Uri uri = Uri.parse(urlString);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (mounted) {

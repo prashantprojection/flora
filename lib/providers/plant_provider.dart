@@ -196,3 +196,18 @@ final plantListProvider = StateNotifierProvider<PlantListNotifier, List<Plant>>(
     return notifier;
   },
 );
+
+final locationListProvider = Provider<List<String>>((ref) {
+  final plants = ref.watch(plantListProvider);
+  final defaultLocations = {'Living Room', 'Bedroom', 'Balcony', 'Garden'};
+
+  final plantLocations = plants
+      .map((p) => p.location)
+      .where((l) => l != null && l.isNotEmpty)
+      .cast<String>()
+      .toSet();
+
+  final allLocations = {...defaultLocations, ...plantLocations}.toList();
+  allLocations.sort();
+  return allLocations;
+});

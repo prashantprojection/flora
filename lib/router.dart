@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flora/screens/home_screen.dart';
 import 'package:flora/screens/plant_detail_screen.dart';
 import 'package:flora/screens/schedule_screen.dart';
-import 'package:flora/screens/health_check_screen.dart';
+import 'package:flora/screens/disease_diagnosis_screen.dart';
 import 'package:flora/screens/support_screen.dart';
 import 'package:flora/widgets/scaffold_with_nav_bar.dart';
 
@@ -45,12 +45,12 @@ final GoRouter router = GoRouter(
             ),
           ],
         ),
-        // Tab 3: Health Check
+        // Tab 3: Diagnosis
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/health-check',
-              builder: (context, state) => const HealthCheckScreen(),
+              builder: (context, state) => const DiseaseDiagnosisScreen(),
             ),
           ],
         ),

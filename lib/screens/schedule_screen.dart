@@ -234,12 +234,14 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                 border: Border.all(
                   color: isSelected
                       ? theme.colorScheme.primary
-                      : theme.colorScheme.outline.withOpacity(0.2),
+                      : theme.colorScheme.outline.withValues(alpha: 0.2),
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.3,
+                          ),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -287,8 +289,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                       height: 4,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? theme.colorScheme.onPrimary.withOpacity(0.5)
-                            : theme.colorScheme.primary.withOpacity(0.5),
+                            ? theme.colorScheme.onPrimary.withValues(alpha: 0.5)
+                            : theme.colorScheme.primary.withValues(alpha: 0.5),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -315,15 +317,15 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(
-                  0.3,
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.3,
                 ),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 LucideIcons.calendarCheck2,
                 size: 48,
-                color: theme.colorScheme.primary.withOpacity(0.5),
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(height: 24),

@@ -10,6 +10,7 @@ import 'package:flora/models/plant.dart';
 import 'package:flora/providers/plant_provider.dart';
 import 'package:flora/utils/app_theme.dart';
 import 'package:flora/api/gemini_service.dart';
+import 'package:flora/services/plant_classifier_service.dart';
 import 'package:uuid/uuid.dart';
 
 class AddPlantSheet extends ConsumerStatefulWidget {
@@ -26,7 +27,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
   final _speciesController = TextEditingController();
   final _locationController = TextEditingController();
   final _dateController = TextEditingController();
-  final _wateringScheduleController = TextEditingController(text: '7');
+  final _wateringScheduleController = TextEditingController();
   final _fertilizingScheduleController = TextEditingController();
   final _pruningScheduleController = TextEditingController();
   final _careInstructionsController = TextEditingController();
@@ -36,6 +37,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
 
   bool _isSaveEnabled = false;
   bool _isGeneratingSuggestions = false;
+  bool _isOtherSelected = false;
 
   @override
   void initState() {
@@ -117,6 +119,71 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
       });
       _validateForm();
     }
+  }
+
+  Future<void> _takePhoto() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Verifying image...')));
+      }
+
+      // Validate if it's a plant
+      final classifier = PlantClassifierService();
+      final isPlant = await classifier.isPlant(file.path);
+
+      if (mounted) {
+        if (isPlant) {
+          setState(() {
+            _selectedImageFile = file;
+            _initialImageUrl = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Plant verified and photo set!')),
+          );
+          _validateForm();
+        } else {
+          _showNonPlantDialog(file);
+        }
+      }
+    }
+  }
+
+  void _showNonPlantDialog(File file) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Not a Plant?'),
+        content: const Text(
+          'This doesn\'t look like a plant. Do you want to use this photo anyway?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Retake'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _selectedImageFile = file;
+                _initialImageUrl = null;
+              });
+              Navigator.of(context).pop();
+              _validateForm();
+            },
+            child: const Text('Use Anyway'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -429,6 +496,19 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
                           ),
                         ),
                       ),
+
+                      const SizedBox(height: 16),
+                      // Smart Scan Button
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: _takePhoto,
+                          icon: const Icon(LucideIcons.camera),
+                          label: const Text('Take Photo'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 24),
 
                       Form(
@@ -528,14 +608,98 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _locationController,
-                              decoration: _buildInputDecoration(
-                                context,
-                                label: 'Location',
-                                hint: 'e.g., Living Room',
-                                icon: LucideIcons.mapPin,
-                              ),
+                            // Location Dropdown & Input
+                            Consumer(
+                              builder: (context, ref, child) {
+                                final locations = ref.watch(
+                                  locationListProvider,
+                                );
+
+                                // Ensure current selection is in the list using our state tracking
+                                // If editing a plant with "Custom Location X", we want that to appear as "Other" -> "Custom Location X"
+                                // UNLESS "Custom Location X" is already in the shared list.
+
+                                final dropdownItems = [...locations, 'Other'];
+
+                                String? dropdownValue;
+
+                                // Logic:
+                                // If I selected Other, value is 'Other'.
+                                // If text matches a known location, value is that location + Other flag false.
+                                // If text is something else (custom), value is 'Other' + Other flag true.
+
+                                if (_isOtherSelected) {
+                                  dropdownValue = 'Other';
+                                } else if (_locationController
+                                        .text
+                                        .isNotEmpty &&
+                                    locations.contains(
+                                      _locationController.text,
+                                    )) {
+                                  dropdownValue = _locationController.text;
+                                } else if (_locationController
+                                    .text
+                                    .isNotEmpty) {
+                                  // Case: Editing a plant with a unique location not shared by others
+                                  dropdownValue = 'Other';
+                                }
+
+                                return Column(
+                                  children: [
+                                    DropdownButtonFormField<String>(
+                                      key: ValueKey(dropdownValue),
+                                      initialValue: dropdownValue,
+                                      decoration: _buildInputDecoration(
+                                        context,
+                                        label: 'Location',
+                                        hint: 'Select Location',
+                                        icon: LucideIcons.mapPin,
+                                      ),
+                                      items: dropdownItems.map((loc) {
+                                        return DropdownMenuItem(
+                                          value: loc,
+                                          child: Text(loc),
+                                        );
+                                      }).toList(),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          if (value == 'Other') {
+                                            _isOtherSelected = true;
+                                            // Don't clear immediately if we just inferred it was "Other" from a custom value
+                                            // But if user actively clicks "Other", maybe they want to type new?
+                                            // Let's safe side: keep text if it was already "custom", clear if switching from a predefined location
+                                            if (locations.contains(
+                                              _locationController.text,
+                                            )) {
+                                              _locationController.clear();
+                                            }
+                                          } else {
+                                            _isOtherSelected = false;
+                                            _locationController.text =
+                                                value ?? '';
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    if (dropdownValue == 'Other') ...[
+                                      const SizedBox(height: 8),
+                                      TextFormField(
+                                        controller: _locationController,
+                                        decoration: _buildInputDecoration(
+                                          context,
+                                          label: 'Custom Location',
+                                          hint: 'e.g., Sunroom',
+                                          icon: LucideIcons.mapPin,
+                                        ),
+                                        onChanged: (_) {
+                                          // Force rebuild to keep state in sync if needed
+                                          setState(() {});
+                                        },
+                                      ),
+                                    ],
+                                  ],
+                                );
+                              },
                             ),
                             const SizedBox(height: 16),
                             TextFormField(

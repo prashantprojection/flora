@@ -5,6 +5,7 @@ import 'package:flora/api/gemini_service.dart';
 import 'package:flora/models/plant.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:flora/utils/network_utils.dart';
 
 class AICareTips extends ConsumerStatefulWidget {
   final Plant plant;
@@ -42,6 +43,19 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
   }
 
   Future<void> _handleGenerateTips() async {
+    // 1. GATEKEEPER: Check Internet
+    final hasInternet = await NetworkUtils.hasInternetConnection();
+    if (!hasInternet) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("No internet. AI usage requires online access."),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _loading = true;
       _careTips = '';
@@ -144,7 +158,7 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                             Theme.of(context).colorScheme.primary,
                             Theme.of(
                               context,
-                            ).colorScheme.primary.withOpacity(0.7),
+                            ).colorScheme.primary.withValues(alpha: 0.7),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -154,7 +168,7 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                           BoxShadow(
                             color: Theme.of(
                               context,
-                            ).colorScheme.primary.withOpacity(0.3),
+                            ).colorScheme.primary.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -222,7 +236,7 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                           _loading || _additionalDetailsController.text.isEmpty
                           ? null
                           : _handleGenerateTips,
-                      icon: Icon(
+                      icon: const Icon(
                         LucideIcons.sparkles,
                         color: Colors.white,
                         size: 20,
@@ -290,7 +304,7 @@ class _SeasonalCarouselState extends State<_SeasonalCarousel> {
   late PageController _pageController;
   late List<MapEntry<String, String>> _entries;
   int _currentPage = 0;
-  Map<int, double> _heights = {};
+  final Map<int, double> _heights = {};
   double _currentHeight = 300; // Default fallback height
 
   @override
@@ -308,14 +322,15 @@ class _SeasonalCarouselState extends State<_SeasonalCarousel> {
     final now = DateTime.now();
     final month = now.month;
     String currentSeason;
-    if (month >= 3 && month <= 5)
+    if (month >= 3 && month <= 5) {
       currentSeason = 'Spring';
-    else if (month >= 6 && month <= 8)
+    } else if (month >= 6 && month <= 8) {
       currentSeason = 'Summer';
-    else if (month >= 9 && month <= 11)
+    } else if (month >= 9 && month <= 11) {
       currentSeason = 'Autumn';
-    else
+    } else {
       currentSeason = 'Winter';
+    }
     int index = _entries.indexWhere(
       (e) => e.key.toLowerCase() == currentSeason.toLowerCase(),
     );
@@ -462,7 +477,7 @@ class _SeasonalCarouselState extends State<_SeasonalCarousel> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.7),
+                        Colors.black.withValues(alpha: 0.7),
                       ],
                     ),
                   ),
@@ -530,51 +545,50 @@ class MeasureSize extends StatefulWidget {
   final Widget child;
   final ValueChanged<Size> onChange;
 
-  const MeasureSize({Key? key, required this.child, required this.onChange})
-    : super(key: key);
+  const MeasureSize({super.key, required this.child, required this.onChange});
 
   @override
-  _MeasureSizeState createState() => _MeasureSizeState();
+  State<MeasureSize> createState() => _MeasureSizeState();
 }
 
 class _MeasureSizeState extends State<MeasureSize> {
   @override
   Widget build(BuildContext context) {
-    return _MeasureSizeRenderObject(
+    return MeasureSizeRenderObject(
       onChange: widget.onChange,
       child: widget.child,
     );
   }
 }
 
-class _MeasureSizeRenderObject extends SingleChildRenderObjectWidget {
+class MeasureSizeRenderObject extends SingleChildRenderObjectWidget {
   final ValueChanged<Size> onChange;
 
-  const _MeasureSizeRenderObject({
-    Key? key,
+  const MeasureSizeRenderObject({
+    super.key,
     required this.onChange,
-    required Widget child,
-  }) : super(key: key, child: child);
+    required Widget super.child,
+  });
 
   @override
   RenderObject createRenderObject(BuildContext context) {
-    return _MeasureSizeRenderBox(onChange);
+    return MeasureSizeRenderBox(onChange);
   }
 
   @override
   void updateRenderObject(
     BuildContext context,
-    _MeasureSizeRenderBox renderObject,
+    MeasureSizeRenderBox renderObject,
   ) {
     renderObject.onChange = onChange;
   }
 }
 
-class _MeasureSizeRenderBox extends RenderProxyBox {
+class MeasureSizeRenderBox extends RenderProxyBox {
   ValueChanged<Size> onChange;
   Size? _oldSize;
 
-  _MeasureSizeRenderBox(this.onChange);
+  MeasureSizeRenderBox(this.onChange);
 
   @override
   void performLayout() {

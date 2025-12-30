@@ -27,7 +27,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
           ),
           NavigationDestination(
             icon: Icon(LucideIcons.heartPulse),
-            label: 'Health Check',
+            label: 'Diagnosis',
           ),
           NavigationDestination(
             icon: Icon(LucideIcons.gem),
