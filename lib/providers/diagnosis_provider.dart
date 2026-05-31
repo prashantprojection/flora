@@ -6,36 +6,37 @@ final diagnosisRepositoryProvider = Provider<DiagnosisRepository>((ref) {
   return DiagnosisRepository();
 });
 
-final diagnosisHistoryProvider =
-    StateNotifierProvider<DiagnosisHistoryNotifier, List<DiagnosisRecord>>((
-      ref,
-    ) {
-      return DiagnosisHistoryNotifier(ref.watch(diagnosisRepositoryProvider));
-    });
+class DiagnosisHistoryNotifier extends Notifier<List<DiagnosisRecord>> {
+  DiagnosisRepository get _repository => ref.read(diagnosisRepositoryProvider);
 
-class DiagnosisHistoryNotifier extends StateNotifier<List<DiagnosisRecord>> {
-  final DiagnosisRepository _repository;
-
-  DiagnosisHistoryNotifier(this._repository) : super([]) {
-    loadHistory();
+  /// [build] initializes state synchronously from the Hive box
+  /// (already open since main.dart opens it before runApp).
+  @override
+  List<DiagnosisRecord> build() {
+    return _repository.getDiagnoses();
   }
 
-  void loadHistory() {
+  void _refresh() {
     state = _repository.getDiagnoses();
   }
 
   Future<void> addDiagnosis(DiagnosisRecord record) async {
     await _repository.saveDiagnosis(record);
-    loadHistory();
+    _refresh();
   }
 
   Future<void> deleteDiagnosis(int index) async {
     await _repository.deleteDiagnosis(index);
-    loadHistory();
+    _refresh();
   }
 
   Future<void> clearHistory() async {
     await _repository.clearHistory();
-    loadHistory();
+    _refresh();
   }
 }
+
+final diagnosisHistoryProvider =
+    NotifierProvider<DiagnosisHistoryNotifier, List<DiagnosisRecord>>(
+  DiagnosisHistoryNotifier.new,
+);

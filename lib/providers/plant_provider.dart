@@ -9,10 +9,14 @@ final apiServiceProvider = Provider<ApiService>((ref) {
   return ApiService();
 });
 
-class PlantListNotifier extends StateNotifier<List<Plant>> {
-  PlantListNotifier() : super([]);
+class PlantListNotifier extends Notifier<List<Plant>> {
+  @override
+  List<Plant> build() {
+    _loadPlants();
+    return [];
+  }
 
-  Future<void> loadPlants() async {
+  Future<void> _loadPlants() async {
     final prefs = await SharedPreferences.getInstance();
     final String? plantsJson = prefs.getString('plants');
     if (plantsJson != null) {
@@ -105,8 +109,6 @@ class PlantListNotifier extends StateNotifier<List<Plant>> {
       );
       if (scheduleIndex != -1) {
         final schedule = plant.careSchedules[scheduleIndex];
-        // Only snooze if it's actually due? Or just push the date?
-        // Let's just push the nextDate.
         final newSchedule = schedule.copyWith(
           nextDate: schedule.nextDate.add(const Duration(days: 1)),
         );
@@ -119,19 +121,6 @@ class PlantListNotifier extends StateNotifier<List<Plant>> {
   }
 
   void skipPlant(String plantId, {CareType type = CareType.watering}) {
-    // Log a "skipped" event for today
-    // Note: We need to know WHICH type was skipped to reset the correct schedule.
-    // Ideally we'd log "skipped_watering" or have metadata.
-    // For now, logging CareType.skipped is generic.
-    // To properly reset the cycle, we need to know what we skipped.
-
-    // Hack: We'll modify _handleCareEvent to handle "skipped" intelligently if we knew the original intent,
-    // BUT generically "skipped" implies skipping the *next due* thing?
-    // A specific `skipTask` method is better.
-
-    // Let's just create a generic event but maybe with a note?
-    // Or we handle the schedule update HERE directly instead of relying on _handleCareEvent logic for skips.
-
     final plant = state.firstWhere((p) => p.id == plantId);
     Plant updatedPlant = plant;
 
@@ -153,7 +142,7 @@ class PlantListNotifier extends StateNotifier<List<Plant>> {
       }
     }
 
-    // Update state directly first (optimistic/logic)
+    // Update state directly first (optimistic)
     state = [
       for (final p in state)
         if (p.id == plantId) updatedPlant else p,
@@ -189,12 +178,8 @@ class PlantListNotifier extends StateNotifier<List<Plant>> {
   }
 }
 
-final plantListProvider = StateNotifierProvider<PlantListNotifier, List<Plant>>(
-  (ref) {
-    final notifier = PlantListNotifier();
-    notifier.loadPlants();
-    return notifier;
-  },
+final plantListProvider = NotifierProvider<PlantListNotifier, List<Plant>>(
+  PlantListNotifier.new,
 );
 
 final locationListProvider = Provider<List<String>>((ref) {
