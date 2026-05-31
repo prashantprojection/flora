@@ -6,6 +6,8 @@ import 'package:flora/models/plant.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:flora/utils/network_utils.dart';
+import 'package:flora/providers/plant_provider.dart';
+import 'package:flora/providers/connectivity_provider.dart';
 
 class AICareTips extends ConsumerStatefulWidget {
   final Plant plant;
@@ -74,6 +76,12 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
       );
 
       if (result.isNotEmpty) {
+        final updatedPlant = widget.plant.copyWith(
+          careInstructions: result,
+          aiTipsGeneratedAt: DateTime.now(),
+          aiTipsSource: widget.plant.location,
+        );
+        ref.read(plantListProvider.notifier).updatePlant(updatedPlant);
         setState(() {
           _careTips = result;
         });
@@ -99,6 +107,7 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
 
   @override
   Widget build(BuildContext context) {
+    final isOnline = ref.watch(isOnlineProvider);
     // 1. Separate Seasonal Tips from specific User Query Generator
     final seasonalTips = _parseSeasonalTips(_careTips);
 
@@ -192,7 +201,9 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Ask specific questions or get more tips',
+                            widget.plant.location != null && widget.plant.location!.isNotEmpty
+                                ? 'Personalised for ${widget.plant.name} in ${widget.plant.location}'
+                                : 'Personalised for ${widget.plant.name}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -229,27 +240,50 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                     ),
                   )
                 else
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed:
-                          _loading || _additionalDetailsController.text.isEmpty
-                          ? null
-                          : _handleGenerateTips,
-                      icon: const Icon(
-                        LucideIcons.sparkles,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      label: const Text('Ask AI'),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  Tooltip(
+                    message: isOnline ? '' : 'Offline — AI features unavailable',
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed:
+                            (!isOnline || _loading || _additionalDetailsController.text.isEmpty)
+                            ? null
+                            : _handleGenerateTips,
+                        icon: const Icon(
+                          LucideIcons.sparkles,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        label: const Text('Ask AI'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
                   ),
+                  if (!isOnline) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.wifiOff,
+                          size: 12,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'AI tips unavailable offline',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
 
                 // Show non-seasonal fallback tips if any
                 if (_careTips.isNotEmpty && seasonalTips.isEmpty) ...[
@@ -266,12 +300,44 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                     child: Text(_careTips),
                   ),
                 ],
+                if (widget.plant.aiTipsGeneratedAt != null) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      'Last updated: ${_formatRelativeTime(widget.plant.aiTipsGeneratedAt!)}',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.7),
+                          ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ],
     );
+  }
+
+  String _formatRelativeTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inMinutes < 1) {
+      return 'just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays == 1) {
+      return 'yesterday';
+    } else {
+      return '${difference.inDays} days ago';
+    }
   }
 
   Map<String, String> _parseSeasonalTips(String tips) {

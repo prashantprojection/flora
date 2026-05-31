@@ -3,12 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/providers/plant_provider.dart';
-import 'package:flora/widgets/plant_card.dart';
-import 'package:flora/widgets/add_plant_sheet.dart';
+
+import 'package:flora/widgets/add_plant_sheet/add_plant_sheet.dart';
 
 import 'package:flora/api/notification_service.dart';
-import 'package:flora/widgets/bulk_water_dialog.dart';
 import 'package:flora/models/care_event.dart';
+import 'package:flora/services/preferences_service.dart';
+import 'package:flora/screens/home/components/onboarding_card.dart';
+import 'package:flora/screens/home/components/bulk_water_dialog.dart';
+import 'package:flora/screens/home/components/home_empty_state.dart';
+import 'package:flora/screens/home/components/home_plant_grid.dart';
+import 'package:flora/screens/home/components/home_header.dart';
+import 'package:flora/screens/home/components/home_urgent_care_section.dart';
+import 'package:flora/widgets/offline_banner.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -21,16 +28,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _searchQuery = '';
   // Simple filters for now
   String _selectedFilter = 'All';
+  bool _showOnboarding = false;
 
   @override
   void initState() {
     super.initState();
+    _checkOnboarding();
     // Request permissions and schedule reminders after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notificationService = ref.read(notificationServiceProvider);
       notificationService.requestPermissions();
       notificationService.scheduleDailyReminder();
     });
+  }
+
+  Future<void> _checkOnboarding() async {
+    final onboardingShown = PreferencesService.hasSeenOnboarding;
+    if (!onboardingShown) {
+      setState(() {
+        _showOnboarding = true;
+      });
+    }
   }
 
   DateTime _startOfDay(DateTime date) {
@@ -191,50 +209,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .where((p) => !_getCareStatus(p)['needsCare'])
         .toList();
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar.large(
-            floating: true,
-            pinned: true,
-            expandedHeight: 180,
-            backgroundColor: theme.colorScheme.surface,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 20, bottom: 20),
-              title: Text(
-                'My Garden',
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft,
-                    colors: [
-                      theme.colorScheme.primary.withValues(alpha: 0.1),
-                      theme.colorScheme.surface,
-                    ],
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: 40,
-                      right: -20,
-                      child: Icon(
-                        LucideIcons.sprout,
-                        size: 150,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+    final mainContent = Scaffold(
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+          const HomeHeader(),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -276,61 +258,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           if (plants.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.3),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        LucideIcons.sprout,
-                        size: 64,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Your garden is empty',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Add your first plant to get started.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              builder: (context) => const AddPlantSheet(),
-                            );
-                          },
-                          label: const Text('Add Plant'),
-                          icon: const Icon(LucideIcons.plus),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
+            const HomeEmptyState()
           else ...[
             SliverToBoxAdapter(
               child: Padding(
@@ -344,92 +272,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
-            if (plantsNeedingCare.isNotEmpty) ...[
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    alignment: WrapAlignment.spaceBetween,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            LucideIcons.droplets,
-                            size: 18,
-                            color: theme.colorScheme.error,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Attention Needed',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.error,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.error.withValues(
-                                alpha: 0.1,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '${plantsNeedingCare.length}',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.error,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (plantsNeedingCare.isNotEmpty)
-                        OutlinedButton.icon(
-                          onPressed: () =>
-                              _showBulkWaterDialog(plantsNeedingCare),
-                          icon: const Icon(LucideIcons.droplets, size: 14),
-                          label: const Text('Water All'),
-                          style: OutlinedButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 280, // Height for horizontal scrolling cards
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: plantsNeedingCare.length,
-                    itemBuilder: (context, index) {
-                      return SizedBox(
-                        width: 300,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: PlantCard(plant: plantsNeedingCare[index]),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
-            ],
+            HomeUrgentCareSection(
+              plantsNeedingCare: plantsNeedingCare,
+              onWaterAll: () => _showBulkWaterDialog(plantsNeedingCare),
+            ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -476,26 +322,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: MediaQuery.of(context).size.width > 900
-                      ? 4
-                      : MediaQuery.of(context).size.width > 600
-                      ? 3
-                      : 2,
-                  childAspectRatio: 0.7, // Taller cards
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  return PlantCard(plant: otherPlants[index]);
-                }, childCount: otherPlants.length),
-              ),
-            ),
+            HomePlantGrid(plants: otherPlants),
             const SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
+        ],
+      ),
+          ),
         ],
       ),
       floatingActionButton: isLargeScreen
@@ -513,5 +345,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: const Icon(LucideIcons.plus),
             ),
     );
+
+    if (_showOnboarding) {
+      return Stack(
+        children: [
+          mainContent,
+          OnboardingCard(
+            onDismiss: () => setState(() => _showOnboarding = false),
+          ),
+        ],
+      );
+    }
+    return mainContent;
   }
 }

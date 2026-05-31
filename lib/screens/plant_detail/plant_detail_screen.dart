@@ -6,11 +6,13 @@ import 'package:go_router/go_router.dart';
 
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/plant.dart';
+import 'package:flora/services/platform_share_service.dart';
 import 'package:flora/providers/plant_provider.dart';
-import 'package:flora/widgets/add_plant_sheet.dart';
-import 'package:flora/widgets/ai_care_tips.dart';
-import 'package:flora/widgets/care_history_list.dart';
-import 'package:flora/widgets/log_care_sheet.dart'; // Updated import
+import 'package:flora/screens/plant_detail/components/ai_care_tips.dart';
+import 'package:flora/screens/plant_detail/components/growth_timeline.dart';
+import 'package:flora/screens/plant_detail/components/care_history_list.dart';
+import 'package:flora/screens/plant_detail/components/log_care_sheet.dart';
+import 'package:flora/widgets/add_plant_sheet/add_plant_sheet.dart';
 
 class PlantDetailScreen extends ConsumerWidget {
   final String plantId;
@@ -41,6 +43,29 @@ class PlantDetailScreen extends ConsumerWidget {
               onPressed: () => context.go('/'),
             ),
             actions: [
+              IconButton(
+                icon: const CircleAvatar(
+                  backgroundColor: Colors.black26,
+                  child: Icon(
+                    LucideIcons.share2,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                onPressed: () {
+                  final String speciesStr = plant.species != null && plant.species!.isNotEmpty ? ' (${plant.species})' : '';
+                  final String locationStr = plant.location != null && plant.location!.isNotEmpty ? '\nLocation: ${plant.location}' : '';
+                  final String frequencyStr = plant.wateringFrequency != null ? '\nWatering Schedule: Every ${plant.wateringFrequency} days' : '';
+                  final String instructionsStr = plant.careInstructions != null && plant.careInstructions!.isNotEmpty ? '\n\nCare Instructions:\n${plant.careInstructions}' : '';
+                  
+                  final summary = 'Plant Summary: ${plant.name}$speciesStr$locationStr$frequencyStr$instructionsStr';
+                  
+                  PlatformShareService.shareText(
+                    summary,
+                    subject: 'Care Info: ${plant.name}',
+                  );
+                },
+              ),
               IconButton(
                 icon: const CircleAvatar(
                   backgroundColor: Colors.black26,
@@ -133,6 +158,8 @@ class PlantDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   AICareTips(plant: plant),
+                  const SizedBox(height: 32),
+                  GrowthTimeline(plant: plant),
                   const SizedBox(height: 32),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

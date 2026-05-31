@@ -115,6 +115,7 @@ class CareHistoryList extends StatelessWidget {
                                       height: 120,
                                       width: double.infinity,
                                       fit: BoxFit.cover,
+                                      cacheWidth: 500,
                                       errorBuilder:
                                           (context, error, stackTrace) {
                                             return const SizedBox.shrink();

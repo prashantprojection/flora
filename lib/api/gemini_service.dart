@@ -26,6 +26,9 @@ class GeminiService {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Location-aware, hemisphere/tropical seasonal advice
+  // ---------------------------------------------------------------------------
   Future<String> generateCareTips({
     required String plantName,
     String? species,
@@ -41,20 +44,38 @@ class GeminiService {
     if (plantingDate.isNotEmpty) {
       prompt += ' It was planted on $plantingDate.';
     }
-    if (location.isNotEmpty) {
-      prompt += ' It is located in/at: $location.';
+
+    // Inject location climate context
+    if (location.isNotEmpty && location != 'Not Specified') {
+      prompt +=
+          ' The user is located in $location. Adjust all care recommendations for this climate, including monsoon season patterns if applicable.';
     }
+
+    // Hemisphere and tropical season awareness
+    prompt +=
+        ' Generate seasonal advice appropriate for the user\'s location ($location). '
+        'If they are in the Southern Hemisphere, reverse the seasons (e.g., December is summer). '
+        'If the location is tropical or near the equator, note that seasons may be wet/dry rather than spring/summer/autumn/winter, '
+        'and label the cards accordingly (e.g., "Wet Season" / "Dry Season").';
+
     if (additionalDetails.isNotEmpty) {
       prompt +=
-          " The user has a specific question or observation: \"$additionalDetails\". Address this directly in your tips.";
+          ' The user has a specific question or observation: "$additionalDetails". Address this directly in your tips.';
     }
-    prompt +=
-        ' Format the response as a simple, bulleted list. Do not include any introductory or concluding sentences. Only provide the list of tips.';
 
-    final content = [Content.text(prompt)];
-    final response = await _textModel.generateContent(content);
-    return response.text?.replaceAll(RegExp(r'[\*_`#]'), '') ??
-        'Could not generate care tips.';
+    prompt +=
+        ' Format the response as seasonal sections: Spring: [tip]\nSummer: [tip]\nAutumn: [tip]\nWinter: [tip]\n'
+        '(or Wet Season/Dry Season if tropical). Do not include any introductory or concluding sentences.';
+
+    try {
+      final content = [Content.text(prompt)];
+      final response = await _textModel.generateContent(content);
+      return response.text?.replaceAll(RegExp(r'[*`#]'), '') ??
+          'Could not generate care tips.';
+    } catch (e) {
+      debugPrint('[GeminiService] generateCareTips failed: $e');
+      return 'Could not generate care tips.';
+    }
   }
 
   Future<String> analyzePlantImage(
@@ -83,8 +104,13 @@ Respond in Markdown format with the following structure:
     final content = [
       Content.multi([TextPart(prompt), DataPart('image/jpeg', imageData)]),
     ];
-    final response = await _visionModel.generateContent(content);
-    return response.text ?? 'Could not analyze image.';
+    try {
+      final response = await _visionModel.generateContent(content);
+      return response.text ?? 'Could not analyze image.';
+    } catch (e) {
+      debugPrint('[GeminiService] analyzePlantImage failed: $e');
+      return 'Could not analyze image.';
+    }
   }
 
   Future<String> validatePlantAndSuggest(String name) async {
@@ -98,11 +124,14 @@ Respond in Markdown format with the following structure:
       final response = await _textModel.generateContent([Content.text(prompt)]);
       return response.text?.trim() ?? 'NO';
     } catch (e) {
-      debugPrint('Error validating plant: $e');
-      return 'NO'; // Fail safe
+      debugPrint('[GeminiService] validatePlantAndSuggest failed: $e');
+      return 'NO';
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Location parameter, reasoning field, and validation
+  // ---------------------------------------------------------------------------
   Future<Map<String, dynamic>> getPlantCareRecommendations({
     required String plantName,
     String? species,
@@ -110,8 +139,16 @@ Respond in Markdown format with the following structure:
   }) async {
     final int month = DateTime.now().month;
 
-    String prompt =
-        '''
+    // Location-aware climate prompt
+    final locationClause = location.isNotEmpty
+        ? 'User is in "$location". Adjust watering frequency for this climate. '
+            'If this is a tropical or monsoon climate, account for wet/dry seasons. '
+            'If outdoor (Garden, Patio, Balcony, Backyard), suggest higher frequency (2-4 days). '
+            'If indoor (Living Room, Bedroom, Office), suggest standard indoor frequency (7-14 days).'
+        : 'If outdoor location, suggest higher watering frequency (2-4 days). '
+            'If indoor, suggest standard indoor frequency (7-14 days).';
+
+    final prompt = '''
 You are a plant care expert. I am adding a new plant to my collection.
 Name: "$plantName"
 Species: "${species ?? 'Unknown'}"
@@ -125,29 +162,34 @@ First, evaluate if "$plantName" (contextualized by species if provided) is a leg
 If INVALID, set "isValid" to false.
 
 If VALID:
-1. Analyze the "Location".
-   - If implies Outdoor (e.g., Garden, Patio, Balcony, Backyard), suggest higher watering frequency (typically 2-4 days) based on exposure.
-   - If implies Indoor (e.g., Living Room, Bedroom, Office), suggest standard indoor frequency (typically 7-14 days).
+1. $locationClause
 2. "frequency": Return an INTEGER representing days between watering.
    - Do NOT return '1' (daily) unless it is strictly necessary (e.g., aquatic plant, seedling in heat).
    - For most indoor plants, 7 is a safe average.
    - Be consistent with standard care guides.
+3. IMPORTANT: Validate the watering frequency against known horticultural standards.
+   Examples: basil requires watering every 1-2 days; succulents every 14-21 days; tropical houseplants every 5-7 days.
+   If your suggested frequency deviates significantly from known standards, explain why in the advice field.
+4. "reasoning": Provide 2-3 concise bullet points explaining why this specific frequency was chosen
+   for this plant in this location (e.g. "Monstera prefers moderate humidity typical of Living Room conditions").
+   Each bullet should start with "• ".
 
 Respond STRICTLY in this JSON format:
 {
   "isValid": boolean,
   "frequency": integer,
-  "advice": "Spring: [Tip]\\nSummer: [Tip]\\nAutumn: [Tip]\\nWinter: [Tip]"
+  "advice": "Spring: [Tip]\\nSummer: [Tip]\\nAutumn: [Tip]\\nWinter: [Tip]",
+  "reasoning": "• Bullet 1\\n• Bullet 2\\n• Bullet 3"
 }
 Do not include markdown formatting like ```json. Just the raw JSON string.
 ''';
 
-    final content = [Content.text(prompt)];
-    final response = await _textModel.generateContent(content);
-    final text =
-        response.text?.replaceAll(RegExp(r'```json|```'), '').trim() ?? '';
-
     try {
+      final content = [Content.text(prompt)];
+      final response = await _textModel.generateContent(content);
+      final text =
+          response.text?.replaceAll(RegExp(r'```json|```'), '').trim() ?? '';
+
       final Map<String, dynamic> data = jsonDecode(text);
       final bool isValid = data['isValid'] == true;
 
@@ -155,24 +197,32 @@ Do not include markdown formatting like ```json. Just the raw JSON string.
         return {'isValid': false};
       }
 
-      int frequency = 7; // Default
+      // Clamp frequency to sane bounds
+      int frequency = 7;
       if (data['frequency'] is int) {
-        frequency = data['frequency'];
+        frequency = data['frequency'] as int;
       } else if (data['frequency'] is String) {
-        frequency = int.tryParse(data['frequency']) ?? 7;
+        frequency = int.tryParse(data['frequency'] as String) ?? 7;
+      }
+      if (frequency < 1 || frequency > 60) {
+        debugPrint(
+            '[GeminiService] Clamped absurd frequency $frequency → 7');
+        frequency = 7;
       }
 
       return {
         'isValid': true,
         'frequency': frequency,
         'advice': data['advice'] ?? 'No specific advice generated.',
+        'reasoning': data['reasoning'] ?? '',
       };
     } catch (e) {
+      debugPrint('[GeminiService] getPlantCareRecommendations failed: $e');
       return {
         'isValid': true,
         'frequency': 7,
-        'advice':
-            'Could not generate specific advice. Water when topsoil is dry.',
+        'advice': 'Could not generate specific advice. Water when topsoil is dry.',
+        'reasoning': '',
       };
     }
   }

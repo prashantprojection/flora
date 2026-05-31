@@ -14,6 +14,13 @@ class Plant {
   final List<CareEvent> careHistory;
   final List<CareSchedule> careSchedules;
 
+  // Gemini reasoning for watering frequency
+  final String? aiReasoning;
+  // Timestamp for "Last updated" label in AICareTips
+  final DateTime? aiTipsGeneratedAt;
+  // Location context used when AI tips were generated
+  final String? aiTipsSource;
+
   Plant({
     required this.id,
     required this.name,
@@ -27,6 +34,9 @@ class Plant {
     this.careInstructions,
     required this.careHistory,
     this.careSchedules = const [],
+    this.aiReasoning,
+    this.aiTipsGeneratedAt,
+    this.aiTipsSource,
   });
 
   Plant copyWith({
@@ -42,6 +52,13 @@ class Plant {
     String? careInstructions,
     List<CareEvent>? careHistory,
     List<CareSchedule>? careSchedules,
+    String? aiReasoning,
+    DateTime? aiTipsGeneratedAt,
+    String? aiTipsSource,
+    // Sentinel to allow explicit null-clearing
+    bool clearAiReasoning = false,
+    bool clearAiTipsGeneratedAt = false,
+    bool clearAiTipsSource = false,
   }) {
     return Plant(
       id: id ?? this.id,
@@ -56,6 +73,12 @@ class Plant {
       careInstructions: careInstructions ?? this.careInstructions,
       careHistory: careHistory ?? this.careHistory,
       careSchedules: careSchedules ?? this.careSchedules,
+      aiReasoning: clearAiReasoning ? null : (aiReasoning ?? this.aiReasoning),
+      aiTipsGeneratedAt: clearAiTipsGeneratedAt
+          ? null
+          : (aiTipsGeneratedAt ?? this.aiTipsGeneratedAt),
+      aiTipsSource:
+          clearAiTipsSource ? null : (aiTipsSource ?? this.aiTipsSource),
     );
   }
 
@@ -65,7 +88,6 @@ class Plant {
     if (json['wateringFrequency'] != null) {
       inferredFrequency = json['wateringFrequency'];
     } else {
-      // Try to infer from current schedule if nextWatering/lastWatered exist and are valid
       try {
         final last = DateTime.parse(json['lastWatered']);
         final next = DateTime.parse(json['nextWatering']);
@@ -73,9 +95,7 @@ class Plant {
         if (diff > 0) {
           inferredFrequency = diff;
         }
-      } catch (_) {
-        // Fallback to 7 if parsing fails
-      }
+      } catch (_) {}
     }
 
     return Plant(
@@ -97,6 +117,12 @@ class Plant {
               ?.map((e) => CareSchedule.fromJson(e))
               .toList() ??
           [],
+      // New nullable fields — safe fallback for old persisted data
+      aiReasoning: json['aiReasoning'] as String?,
+      aiTipsGeneratedAt: json['aiTipsGeneratedAt'] != null
+          ? DateTime.tryParse(json['aiTipsGeneratedAt'] as String)
+          : null,
+      aiTipsSource: json['aiTipsSource'] as String?,
     );
   }
 
@@ -114,6 +140,9 @@ class Plant {
       'careInstructions': careInstructions,
       'careHistory': careHistory.map((e) => e.toJson()).toList(),
       'careSchedules': careSchedules.map((e) => e.toJson()).toList(),
+      'aiReasoning': aiReasoning,
+      'aiTipsGeneratedAt': aiTipsGeneratedAt?.toIso8601String(),
+      'aiTipsSource': aiTipsSource,
     };
   }
 }

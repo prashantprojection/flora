@@ -176,6 +176,33 @@ class PlantListNotifier extends Notifier<List<Plant>> {
     state = state.where((plant) => plant.id != plantId).toList();
     _savePlants();
   }
+
+  void importPlants(List<Plant> plants, {required String duplicateStrategy}) {
+    final List<Plant> updatedList = List<Plant>.from(state);
+
+    for (final plant in plants) {
+      final existingIndex = updatedList.indexWhere((p) => p.id == plant.id);
+
+      if (existingIndex != -1) {
+        if (duplicateStrategy == 'replace') {
+          updatedList[existingIndex] = plant;
+        } else if (duplicateStrategy == 'keep_both') {
+          final newId = '${DateTime.now().millisecondsSinceEpoch}_${plant.id}';
+          final renamedPlant = plant.copyWith(
+            id: newId,
+            name: '${plant.name} (Copy)',
+          );
+          updatedList.add(renamedPlant);
+        }
+        // If 'skip', do nothing
+      } else {
+        updatedList.add(plant);
+      }
+    }
+
+    state = updatedList;
+    _savePlants();
+  }
 }
 
 final plantListProvider = NotifierProvider<PlantListNotifier, List<Plant>>(

@@ -8,6 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flora/api/notification_service.dart';
 import 'package:flora/services/update_service.dart';
 import 'package:flora/models/diagnosis_record.dart';
+import 'package:flora/services/preferences_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,7 @@ Future<void> main() async {
 
   final notificationService = NotificationService();
   await notificationService.init();
+  await PreferencesService.init();
 
   runApp(const ProviderScope(child: MyApp()));
 }

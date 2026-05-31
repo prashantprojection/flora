@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flora/services/image_picker_service.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/care_event.dart';
@@ -51,8 +51,7 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.camera);
+    final File? image = await ImagePickerService.pickImage(fromCamera: true);
     if (image != null) {
       setState(() {
         _photoPath = image.path;

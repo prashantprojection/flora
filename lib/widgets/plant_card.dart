@@ -37,6 +37,7 @@ class PlantCard extends StatelessWidget {
                     ? Image.network(
                         plant.imageUrl!,
                         fit: BoxFit.cover,
+                        cacheWidth: 500,
                         errorBuilder: (context, error, stackTrace) => Center(
                           child: Icon(
                             LucideIcons.flower2,
@@ -51,6 +52,7 @@ class PlantCard extends StatelessWidget {
                           ? Image.file(
                               File(plant.imageUrl!),
                               fit: BoxFit.cover,
+                              cacheWidth: 500,
                               errorBuilder: (context, error, stackTrace) =>
                                   Center(
                                     child: Icon(
