@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flora/services/image_picker_service.dart';
+import 'package:flora/services/image_service.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/care_event.dart';
@@ -51,7 +51,7 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
   }
 
   Future<void> _pickImage() async {
-    final File? image = await ImagePickerService.pickImage(fromCamera: true);
+    final File? image = await ImageService.pickImage(fromCamera: true);
     if (image != null) {
       setState(() {
         _photoPath = image.path;
@@ -59,14 +59,24 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
     }
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      String? finalPhotoPath = _photoPath;
+      if (_photoPath != null) {
+        finalPhotoPath = await ImageService.saveImagePermanently(
+          _photoPath!,
+          prefix: 'log',
+        );
+      }
+
+      if (!mounted) return;
+
       final newCareEvent = CareEvent(
         id: DateTime.now().toString(),
         type: _selectedCareType,
         date: _selectedDate,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
-        photoUrl: _photoPath,
+        photoUrl: finalPhotoPath,
       );
 
       ref

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flora/services/image_picker_service.dart';
+import 'package:flora/services/image_service.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -85,7 +85,7 @@ class _DiseaseDiagnosisScreenState
     await _flutterTts.stop();
     setState(() => _isSpeaking = false);
     try {
-      final File? pickedFile = await ImagePickerService.pickImage(
+      final File? pickedFile = await ImageService.pickImage(
         fromCamera: fromCamera,
       );
       if (pickedFile != null) {

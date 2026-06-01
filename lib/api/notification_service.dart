@@ -78,7 +78,7 @@ class NotificationService {
       plant.nextWatering.year,
       plant.nextWatering.month,
       plant.nextWatering.day,
-      12, // Noon
+      9, // 9 AM
     );
     
     if (scheduledDate.isBefore(now)) {

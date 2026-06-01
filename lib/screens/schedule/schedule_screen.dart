@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flora/services/image_picker_service.dart';
+import 'package:flora/services/image_service.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/care_event.dart';
@@ -262,11 +262,14 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
     if (daysFromNext >= 0 && daysFromNext % frequency == 0) {
       // Check if Completed OR Skipped on this date
-      final isCompleted = plant.careHistory.any(
-        (event) =>
-            (event.type == type || event.type == CareType.skipped) &&
-            _isSameDay(event.date, normalizedSelected),
-      );
+      final isCompleted = plant.careHistory.any((event) {
+        if (!_isSameDay(event.date, normalizedSelected)) return false;
+        if (event.type == type) return true;
+        if (event.type == CareType.skipped && event.notes != null) {
+          return event.notes!.toLowerCase().contains(type.name.toLowerCase());
+        }
+        return false;
+      });
 
       tasks.add(
         UpcomingCareTask(
@@ -335,9 +338,12 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     String? photoPath;
 
     if (shouldTakePhoto) {
-      final File? image = await ImagePickerService.pickImage(fromCamera: true);
+      final File? image = await ImageService.pickImage(fromCamera: true);
       if (image != null) {
-        photoPath = image.path;
+        photoPath = await ImageService.saveImagePermanently(
+          image.path,
+          prefix: 'journal',
+        );
       }
     }
 

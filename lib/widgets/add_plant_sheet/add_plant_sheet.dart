@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flora/models/care_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flora/services/image_picker_service.dart';
+import 'package:flora/services/image_service.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/plant.dart';
@@ -144,7 +144,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePickerService.pickImage(fromCamera: false);
+    final pickedFile = await ImageService.pickImage(fromCamera: false);
     if (pickedFile != null) {
       setState(() {
         _selectedImageFile = pickedFile;
@@ -155,7 +155,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
   }
 
   Future<void> _takePhoto() async {
-    final pickedFile = await ImagePickerService.pickImage(fromCamera: true);
+    final pickedFile = await ImageService.pickImage(fromCamera: true);
 
     if (pickedFile != null) {
       final file = pickedFile;
@@ -340,10 +340,18 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
     );
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       final String id = widget.plant?.id ?? const Uuid().v4();
-      final String? imageUrl = _selectedImageFile?.path ?? _initialImageUrl;
+      
+      String? imageUrl = _initialImageUrl;
+      if (_selectedImageFile != null) {
+        imageUrl = await ImageService.saveImagePermanently(
+          _selectedImageFile!.path,
+          prefix: 'plant',
+        );
+      }
+
       final int wateringDays = int.parse(_wateringScheduleController.text);
       final DateTime lastWatered = widget.plant?.lastWatered ?? _selectedDate!;
 
@@ -410,6 +418,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
       } else {
         ref.read(plantListProvider.notifier).updatePlant(plant);
       }
+      if (!mounted) return;
       Navigator.of(context).pop();
     }
   }

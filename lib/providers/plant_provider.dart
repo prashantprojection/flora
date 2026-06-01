@@ -98,21 +98,19 @@ class PlantListNotifier extends Notifier<List<Plant>> {
         if (plant.id == plantId) _snoozePlantInternal(plant, type, days) else plant,
     ];
     
-    if (notes != null && notes.isNotEmpty) {
-      addCareEvent(
-        plantId,
-        CareEvent(
-          id: DateTime.now().toString(),
-          type: CareType.skipped,
-          date: DateTime.now(),
-          notes: notes,
-        ),
-      );
-    } else {
-      _savePlants();
-      final updatedPlant = state.firstWhere((p) => p.id == plantId, orElse: () => state.first);
-      ref.read(notificationServiceProvider).schedulePlantNotification(updatedPlant);
-    }
+    final String eventNote = (notes != null && notes.isNotEmpty) 
+        ? notes 
+        : 'Snoozed ${type.name} for $days day(s)';
+        
+    addCareEvent(
+      plantId,
+      CareEvent(
+        id: DateTime.now().toString(),
+        type: CareType.skipped,
+        date: DateTime.now(),
+        notes: eventNote,
+      ),
+    );
   }
 
   void snoozePlant(String plantId, {CareType type = CareType.watering}) {
@@ -120,9 +118,13 @@ class PlantListNotifier extends Notifier<List<Plant>> {
   }
 
   Plant _snoozePlantInternal(Plant plant, CareType type, int days) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
     if (type == CareType.watering) {
+      final baseDate = plant.nextWatering.isBefore(today) ? today : plant.nextWatering;
       return plant.copyWith(
-        nextWatering: plant.nextWatering.add(Duration(days: days)),
+        nextWatering: baseDate.add(Duration(days: days)),
       );
     } else {
       // Snooze specific schedule
@@ -131,8 +133,9 @@ class PlantListNotifier extends Notifier<List<Plant>> {
       );
       if (scheduleIndex != -1) {
         final schedule = plant.careSchedules[scheduleIndex];
+        final baseDate = schedule.nextDate.isBefore(today) ? today : schedule.nextDate;
         final newSchedule = schedule.copyWith(
-          nextDate: schedule.nextDate.add(Duration(days: days)),
+          nextDate: baseDate.add(Duration(days: days)),
         );
         final newSchedules = List<CareSchedule>.from(plant.careSchedules);
         newSchedules[scheduleIndex] = newSchedule;
@@ -177,10 +180,9 @@ class PlantListNotifier extends Notifier<List<Plant>> {
         id: DateTime.now().toString(),
         type: CareType.skipped,
         date: DateTime.now(),
-        notes: 'Skipped ${type.name}',
+        notes: 'Skipped ${type.name} task',
       ),
     );
-    _savePlants();
   }
 
   void updatePlant(Plant updatedPlant) {
