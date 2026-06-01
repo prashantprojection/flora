@@ -126,26 +126,29 @@ class DiagnosisHistorySheet extends ConsumerWidget {
                   ),
                   leading: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: File(record.imagePath).existsSync()
-                        ? Image.file(
-                            File(record.imagePath),
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                            cacheWidth: 300,
-                            errorBuilder: (_, __, ___) => Container(
+                    child: RepaintBoundary(
+                      child: File(record.imagePath).existsSync()
+                          ? Image.file(
+                              File(record.imagePath),
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                              cacheWidth: 240,
+                              gaplessPlayback: true,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 60,
+                                height: 60,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.broken_image),
+                              ),
+                            )
+                          : Container(
                               width: 60,
                               height: 60,
                               color: Colors.grey[300],
                               child: const Icon(Icons.broken_image),
                             ),
-                          )
-                        : Container(
-                            width: 60,
-                            height: 60,
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.broken_image),
-                          ),
+                    ),
                   ),
                   title: Text(
                     DateFormat.yMMMd().format(record.date),

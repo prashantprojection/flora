@@ -1,9 +1,12 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/providers/plant_provider.dart';
 import 'package:flora/services/backup_service.dart';
 import 'package:flora/models/plant.dart';
+import 'package:flora/widgets/animated_press.dart';
 
 class SupportBackupCard extends ConsumerStatefulWidget {
   const SupportBackupCard({super.key});
@@ -13,6 +16,8 @@ class SupportBackupCard extends ConsumerStatefulWidget {
 }
 
 class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
+  bool _isImporting = false;
+
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -25,103 +30,47 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
     );
   }
 
-  void _showImportDialog() {
-    final theme = Theme.of(context);
-    final textController = TextEditingController();
+  Future<void> _pickAndImportFile() async {
+    setState(() => _isImporting = true);
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-            ),
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'Import Garden Data 🌿',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(LucideIcons.x),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Paste your Flora garden backup JSON text below to import or restore your plants.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: textController,
-                  maxLines: 8,
-                  decoration: InputDecoration(
-                    hintText: '[{"id": "...", "name": "...", ...}]',
-                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.3),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => _processImport(textController.text),
-                  icon: const Icon(LucideIcons.arrowDownToLine),
-                  label: const Text(
-                    'Parse & Import',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        allowMultiple: false,
+      );
+
+      if (result == null || result.files.isEmpty) {
+        setState(() => _isImporting = false);
+        return;
+      }
+
+      final path = result.files.single.path;
+      if (path == null) {
+        _showSnackBar('Could not read selected file.', isError: true);
+        setState(() => _isImporting = false);
+        return;
+      }
+
+      final rawText = await File(path).readAsString();
+      await _processImport(rawText);
+    } catch (e) {
+      _showSnackBar('Failed to open file: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
   }
 
   Future<void> _processImport(String rawText) async {
-    Navigator.pop(context);
-    if (rawText.trim().isEmpty) return;
+    if (rawText.trim().isEmpty) {
+      _showSnackBar('The selected file is empty.', isError: true);
+      return;
+    }
 
     try {
       final importedPlants = BackupService.parseBackup(rawText);
       if (importedPlants.isEmpty) {
-        _showSnackBar('No plants found in the backup data.', isError: true);
+        _showSnackBar('No plants found in the backup file.', isError: true);
         return;
       }
 
@@ -142,7 +91,7 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
       }
     } catch (e) {
       _showSnackBar(
-        'Failed to parse backup data: Invalid format.',
+        'Failed to parse backup: Invalid or corrupted file.',
         isError: true,
       );
     }
@@ -243,41 +192,44 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Card(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
           width: 1,
         ),
       ),
       child: ExpansionTile(
         shape: const Border(),
         collapsedShape: const Border(),
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+        backgroundColor:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer,
+            color: theme.colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             LucideIcons.databaseBackup,
-            color: Theme.of(context).colorScheme.primary,
+            color: theme.colorScheme.primary,
             size: 20,
           ),
         ),
         title: Text(
           'Backup & Household Share',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         subtitle: Text(
           'Export or import your garden data',
-          style: Theme.of(context).textTheme.bodySmall,
+          style: theme.textTheme.bodySmall,
         ),
         childrenPadding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
         children: [
@@ -290,14 +242,8 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () {
+                child: AnimatedPress(
+                  onTap: () {
                     final plants = ref.read(plantListProvider);
                     if (plants.isEmpty) {
                       _showSnackBar('No plants to export yet!', isError: true);
@@ -305,30 +251,61 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
                     }
                     BackupService.exportBackup(plants);
                   },
-                  icon: const Icon(LucideIcons.share2, size: 18),
-                  label: const Text(
-                    'Export',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: theme.colorScheme.outlineVariant),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.share2, size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'Export',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                child: AnimatedPress(
+                  onTap: _isImporting ? null : _pickAndImportFile,
+                  child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 0,
-                  ),
-                  onPressed: _showImportDialog,
-                  icon: const Icon(LucideIcons.download, size: 18),
-                  label: const Text(
-                    'Import',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_isImporting)
+                          const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        else
+                          Icon(LucideIcons.folderOpen,
+                              size: 18, color: theme.colorScheme.onPrimary),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isImporting ? 'Importing...' : 'Import',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

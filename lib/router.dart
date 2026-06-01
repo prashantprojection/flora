@@ -5,6 +5,8 @@ import 'package:flora/screens/plant_detail/plant_detail_screen.dart';
 import 'package:flora/screens/schedule/schedule_screen.dart';
 import 'package:flora/screens/disease_diagnosis/disease_diagnosis_screen.dart';
 import 'package:flora/screens/support/support_screen.dart';
+import 'package:flora/screens/onboarding/onboarding_screen.dart';
+import 'package:flora/services/preferences_service.dart';
 import 'package:flora/widgets/scaffold_with_nav_bar.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -12,7 +14,19 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GoRouter router = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/',
+  redirect: (context, state) {
+    if (!PreferencesService.hasSeenOnboarding) {
+      if (state.matchedLocation != '/onboarding') {
+        return '/onboarding';
+      }
+    }
+    return null;
+  },
   routes: <RouteBase>[
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return ScaffoldWithNavBar(navigationShell: navigationShell);

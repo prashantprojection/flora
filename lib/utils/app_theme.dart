@@ -20,47 +20,47 @@ class AppTheme {
 
   // 2. Typography
   static final TextTheme textTheme = TextTheme(
-    headlineLarge: GoogleFonts.ptSans(
+    headlineLarge: GoogleFonts.outfit(
       fontSize: 32,
       fontWeight: FontWeight.bold,
       color: foreground,
     ), // Larger headlines if needed
-    titleLarge: GoogleFonts.ptSans(
+    titleLarge: GoogleFonts.outfit(
       fontSize: 24,
       fontWeight: FontWeight.bold,
       color: foreground,
     ), // Page Title
-    titleMedium: GoogleFonts.ptSans(
+    titleMedium: GoogleFonts.outfit(
       fontSize: 20,
       fontWeight: FontWeight.w600,
       color: cardForeground,
     ), // Card Title
-    bodyMedium: GoogleFonts.ptSans(
+    bodyMedium: GoogleFonts.outfit(
       fontSize: 14,
       fontWeight: FontWeight.normal,
       color: foreground,
     ), // Body (base)
-    bodySmall: GoogleFonts.ptSans(
+    bodySmall: GoogleFonts.outfit(
       fontSize: 14,
       fontWeight: FontWeight.normal,
       color: mutedForeground,
     ), // Description/Muted
-    labelLarge: GoogleFonts.ptSans(
+    labelLarge: GoogleFonts.outfit(
       fontSize: 14,
       fontWeight: FontWeight.w500,
       color: primaryForeground,
     ), // Button
-    labelMedium: GoogleFonts.ptSans(
+    labelMedium: GoogleFonts.outfit(
       fontSize: 14,
       fontWeight: FontWeight.w500,
       color: foreground,
     ), // Label
-    bodyLarge: GoogleFonts.ptSans(
+    bodyLarge: GoogleFonts.outfit(
       fontSize: 16,
       fontWeight: FontWeight.normal,
       color: foreground,
     ),
-    labelSmall: GoogleFonts.ptSans(
+    labelSmall: GoogleFonts.outfit(
       fontSize: 12,
       fontWeight: FontWeight.normal,
       color: mutedForeground,

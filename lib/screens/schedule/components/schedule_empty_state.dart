@@ -16,18 +16,25 @@ class ScheduleEmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.3,
+            SizedBox(
+              height: 180,
+              child: Image.asset(
+                'assets/images/flo_schedule_complete.png',
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.3,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    LucideIcons.calendarCheck2,
+                    size: 48,
+                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                  ),
                 ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                LucideIcons.calendarCheck2,
-                size: 48,
-                color: theme.colorScheme.primary.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(height: 24),

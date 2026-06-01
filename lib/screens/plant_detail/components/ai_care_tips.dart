@@ -50,9 +50,9 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
     if (!hasInternet) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("No internet. AI usage requires online access."),
-          backgroundColor: Colors.redAccent,
+        SnackBar(
+          content: const Text('No internet — Flo AI requires a connection.'),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
       return;
@@ -91,11 +91,9 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Could not generate care tips. Please try again later.",
-          ),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Could not generate tips. Please try again later.'),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     } finally {
@@ -195,7 +193,7 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'AI Plant Care Tips',
+                            'Flo AI Care Tips',
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
@@ -241,7 +239,7 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                   )
                 else
                   Tooltip(
-                    message: isOnline ? '' : 'Offline — AI features unavailable',
+                    message: isOnline ? '' : 'Offline — Flo AI is unavailable',
                     child: SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
@@ -254,7 +252,7 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                           color: Colors.white,
                           size: 20,
                         ),
-                        label: const Text('Ask AI'),
+                        label: const Text('Ask Flo'),
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
@@ -276,7 +274,7 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'AI tips unavailable offline',
+                          'Flo AI unavailable offline',
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: Theme.of(context).colorScheme.error,
                           ),

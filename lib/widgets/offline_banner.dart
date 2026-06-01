@@ -61,14 +61,29 @@ class _OfflineBannerState extends ConsumerState<OfflineBanner> {
               size: 18,
             ),
             const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Offline — AI features unavailable. Your plant data is safe.',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Offline — Flo AI is unavailable',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Your schedule and plant data are fully available offline.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
               ),
             ),
             IconButton(

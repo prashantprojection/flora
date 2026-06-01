@@ -8,8 +8,6 @@ import 'package:flora/widgets/add_plant_sheet/add_plant_sheet.dart';
 
 import 'package:flora/api/notification_service.dart';
 import 'package:flora/models/care_event.dart';
-import 'package:flora/services/preferences_service.dart';
-import 'package:flora/screens/home/components/onboarding_card.dart';
 import 'package:flora/screens/home/components/bulk_water_dialog.dart';
 import 'package:flora/screens/home/components/home_empty_state.dart';
 import 'package:flora/screens/home/components/home_plant_grid.dart';
@@ -28,12 +26,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _searchQuery = '';
   // Simple filters for now
   String _selectedFilter = 'All';
-  bool _showOnboarding = false;
 
   @override
   void initState() {
     super.initState();
-    _checkOnboarding();
     // Request permissions and schedule reminders after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notificationService = ref.read(notificationServiceProvider);
@@ -42,46 +38,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  Future<void> _checkOnboarding() async {
-    final onboardingShown = PreferencesService.hasSeenOnboarding;
-    if (!onboardingShown) {
-      setState(() {
-        _showOnboarding = true;
-      });
-    }
-  }
-
-  DateTime _startOfDay(DateTime date) {
+  // Uses inDays (floor division) — consistent with PlantCard and avoids rounding bugs
+  // where a plant watered moments ago still shows "needs care" due to .round().
+  static DateTime _startOfDay(DateTime date) {
     return DateTime(date.year, date.month, date.day);
   }
 
-  Map<String, dynamic> _getCareStatus(Plant plant) {
-    final now = DateTime.now();
-    final today = _startOfDay(now);
-
-    // Check Watering
+  static Map<String, dynamic> getCareStatus(Plant plant) {
+    final today = _startOfDay(DateTime.now());
     final nextWatering = _startOfDay(plant.nextWatering);
-    int minDaysUsingWatering = (nextWatering.difference(today).inHours / 24)
-        .round();
+    int minDays = nextWatering.difference(today).inDays;
 
     // Check other schedules
     for (final schedule in plant.careSchedules) {
-      final nextSchedule = _startOfDay(schedule.nextDate);
-      final diff = (nextSchedule.difference(today).inHours / 24).round();
-      if (diff < minDaysUsingWatering) {
-        minDaysUsingWatering = diff;
-      }
+      final diff = _startOfDay(schedule.nextDate).difference(today).inDays;
+      if (diff < minDays) minDays = diff;
     }
 
     return {
-      // Needs care if any task is due today (0) or overdue (< 0)
-      'needsCare': minDaysUsingWatering <= 0,
-      'overdue': minDaysUsingWatering < 0 ? minDaysUsingWatering.abs() : 0,
-      'daysUntil': minDaysUsingWatering,
+      'needsCare': minDays <= 0,
+      'overdue': minDays < 0 ? minDays.abs() : 0,
+      'daysUntil': minDays,
     };
   }
 
-  void _showBulkWaterDialog(List<Plant> needyPlants) {
+  void _showBulkWaterDialog(BuildContext scaffoldContext, List<Plant> needyPlants) {
     showDialog(
       context: context,
       builder: (context) {
@@ -89,7 +70,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           plants: needyPlants,
           onConfirm: (selectedIds) {
             for (final id in selectedIds) {
-              // Add Water event for today
               ref
                   .read(plantListProvider.notifier)
                   .addCareEvent(
@@ -101,7 +81,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   );
             }
-            ScaffoldMessenger.of(context).showSnackBar(
+            // Use the outer scaffold context — safe even after dialog is popped
+            ScaffoldMessenger.of(scaffoldContext).showSnackBar(
               SnackBar(content: Text('Watered ${selectedIds.length} plants!')),
             );
           },
@@ -178,18 +159,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning,';
-    if (hour < 17) return 'Good Afternoon,';
-    return 'Good Evening,';
+    if (hour < 12) return 'Good Morning 🌤';
+    if (hour < 17) return 'Good Afternoon ☀️';
+    return 'Good Evening 🌙';
   }
 
   @override
   Widget build(BuildContext context) {
-    final allPlants = ref.watch(plantListProvider); // Rename local var
+    final allPlants = ref.watch(plantListProvider);
     final theme = Theme.of(context);
     final isLargeScreen = MediaQuery.of(context).size.width > 600;
 
-    // 1. Filter Logic
+    // Pre-compute statuses ONCE per build to avoid O(n²) re-computation.
+    final careStatuses = {
+      for (final p in allPlants) p.id: getCareStatus(p),
+    };
+
     final plants = allPlants.where((p) {
       final matchesSearch =
           p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -201,138 +186,126 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }).toList();
 
     final plantsNeedingCare =
-        plants.where((p) => _getCareStatus(p)['needsCare']).toList()..sort(
-          (a, b) => _getCareStatus(b)['overdue'] - _getCareStatus(a)['overdue'],
-        );
+        plants.where((p) => careStatuses[p.id]!['needsCare'] as bool).toList()
+          ..sort(
+            (a, b) =>
+                (careStatuses[b.id]!['overdue'] as int) -
+                (careStatuses[a.id]!['overdue'] as int),
+          );
 
-    final otherPlants = plants
-        .where((p) => !_getCareStatus(p)['needsCare'])
-        .toList();
+    final otherPlants =
+        plants.where((p) => !(careStatuses[p.id]!['needsCare'] as bool)).toList();
 
-    final mainContent = Scaffold(
-      body: Column(
-        children: [
-          const OfflineBanner(),
-          Expanded(
-            child: CustomScrollView(
-              slivers: [
-          const HomeHeader(),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Search Bar with Filter
-                  TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Search your garden...',
-                      prefixIcon: const Icon(LucideIcons.search),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          LucideIcons.slidersHorizontal,
-                          color: _selectedFilter == 'All'
-                              ? theme.colorScheme.onSurfaceVariant
-                              : theme.colorScheme.primary,
-                        ),
-                        onPressed: _showFilterDialog,
-                        tooltip: 'Filter Plants',
-                      ),
-                      filled: true,
-                      fillColor: theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.5),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (plants.isEmpty)
-            const HomeEmptyState()
-          else ...[
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                child: Text(
-                  _getGreeting(),
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: theme.colorScheme.secondary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            HomeUrgentCareSection(
-              plantsNeedingCare: plantsNeedingCare,
-              onWaterAll: () => _showBulkWaterDialog(plantsNeedingCare),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      LucideIcons.flower2,
-                      size: 18,
-                      color: theme.colorScheme.secondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      plantsNeedingCare.isNotEmpty
-                          ? 'Thriving Plants'
-                          : 'Your Collection',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.secondary.withValues(
-                          alpha: 0.1,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${otherPlants.length}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.secondary,
-                          fontWeight: FontWeight.bold,
+    return Scaffold(
+      body: Builder(
+        // Builder gives us a context that has the Scaffold's ScaffoldMessenger,
+        // safe to use in dialog callbacks after the dialog is closed.
+        builder: (scaffoldContext) {
+          return Column(
+            children: [
+              const OfflineBanner(),
+              Expanded(
+                child: CustomScrollView(
+                  slivers: [
+                    HomeHeader(greeting: _getGreeting()),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: TextField(
+                          onChanged: (value) {
+                            setState(() {
+                              _searchQuery = value;
+                            });
+                          },
+                          decoration: InputDecoration(
+                            hintText: 'Search your garden...',
+                            prefixIcon: const Icon(LucideIcons.search),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                LucideIcons.slidersHorizontal,
+                                color: _selectedFilter == 'All'
+                                    ? theme.colorScheme.onSurfaceVariant
+                                    : theme.colorScheme.primary,
+                              ),
+                              onPressed: _showFilterDialog,
+                              tooltip: 'Filter Plants',
+                            ),
+                            filled: true,
+                            fillColor: theme.colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.5),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                          ),
                         ),
                       ),
                     ),
+                    if (plants.isEmpty)
+                      const HomeEmptyState()
+                    else ...[
+                      HomeUrgentCareSection(
+                        plantsNeedingCare: plantsNeedingCare,
+                        onWaterAll: () =>
+                            _showBulkWaterDialog(scaffoldContext, plantsNeedingCare),
+                      ),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                          child: Row(
+                            children: [
+                              Icon(
+                                LucideIcons.flower2,
+                                size: 18,
+                                color: theme.colorScheme.secondary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                plantsNeedingCare.isNotEmpty
+                                    ? 'Thriving Plants'
+                                    : 'Your Collection',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.secondary.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${otherPlants.length}',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.secondary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      HomePlantGrid(plants: otherPlants),
+                      const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                    ],
                   ],
                 ),
               ),
-            ),
-            HomePlantGrid(plants: otherPlants),
-            const SliverToBoxAdapter(child: SizedBox(height: 80)),
-          ],
-        ],
-      ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
       floatingActionButton: isLargeScreen
           ? null
-          : FloatingActionButton(
+          : FloatingActionButton.extended(
               onPressed: () {
                 showModalBottomSheet(
                   context: context,
@@ -342,20 +315,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   },
                 );
               },
-              child: const Icon(LucideIcons.plus),
+              icon: const Icon(LucideIcons.plus),
+              label: const Text('Add Plant'),
             ),
     );
-
-    if (_showOnboarding) {
-      return Stack(
-        children: [
-          mainContent,
-          OnboardingCard(
-            onDismiss: () => setState(() => _showOnboarding = false),
-          ),
-        ],
-      );
-    }
-    return mainContent;
   }
 }

@@ -79,7 +79,14 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             },
             hasTasksForDate: (date) => _hasTasksForDate(plants, date),
           ),
-          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+            ),
+          ),
           Expanded(
             child: tasksForSelectedDate.isEmpty
                 ? ScheduleEmptyState(
@@ -108,10 +115,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                             ? DismissDirection.horizontal
                             : DismissDirection.none,
                         background: Container(
-                          margin: const EdgeInsets.only(bottom: 16),
+                          margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
                             color: Colors.green,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(18),
                           ),
                           alignment: Alignment.centerLeft,
                           padding: const EdgeInsets.only(left: 20),
@@ -130,10 +137,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                           ),
                         ),
                         secondaryBackground: Container(
-                          margin: const EdgeInsets.only(bottom: 16),
+                          margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
                             color: Colors.orange,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(18),
                           ),
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 20),

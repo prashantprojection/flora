@@ -13,6 +13,7 @@ import 'package:flora/screens/plant_detail/components/growth_timeline.dart';
 import 'package:flora/screens/plant_detail/components/care_history_list.dart';
 import 'package:flora/screens/plant_detail/components/log_care_sheet.dart';
 import 'package:flora/widgets/add_plant_sheet/add_plant_sheet.dart';
+import 'package:flora/models/care_event.dart';
 
 class PlantDetailScreen extends ConsumerWidget {
   final String plantId;
@@ -228,38 +229,64 @@ class PlantDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildQuickStats(BuildContext context, Plant plant) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildStatCard(
-            context,
-            icon: LucideIcons.droplets,
-            label: 'Water',
-            value:
-                '${plant.nextWatering.difference(plant.lastWatered).inDays} days',
-            color: Colors.blue,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                context,
+                icon: LucideIcons.calendar,
+                label: 'Age',
+                value: _getAge(plant.plantingDate),
+                color: Colors.teal,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                context,
+                icon: LucideIcons.mapPin,
+                label: 'Location',
+                value: plant.location?.isNotEmpty == true ? plant.location! : 'N/A',
+                color: Colors.red,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            context,
-            icon: LucideIcons.mapPin,
-            label: 'Location',
-            value: plant.location ?? 'N/A',
-            color: Colors.orange,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            context,
-            icon: LucideIcons.calendar,
-            label: 'Age', // Rough approximation
-            value:
-                '${DateTime.now().difference(plant.plantingDate).inDays} days',
-            color: Colors.green,
-          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                context,
+                icon: LucideIcons.droplets,
+                label: 'Water',
+                value: _formatNextDate(plant.nextWatering),
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                context,
+                icon: LucideIcons.flaskConical,
+                label: 'Fertilize',
+                value: _getScheduleNextDate(plant, CareType.fertilizing) != null ? _formatNextDate(_getScheduleNextDate(plant, CareType.fertilizing)!) : 'N/A',
+                color: Colors.purple,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                context,
+                icon: LucideIcons.scissors,
+                label: 'Prune',
+                value: _getScheduleNextDate(plant, CareType.pruning) != null ? _formatNextDate(_getScheduleNextDate(plant, CareType.pruning)!) : 'N/A',
+                color: Colors.orange,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -319,6 +346,31 @@ class PlantDetailScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  DateTime? _getScheduleNextDate(Plant plant, CareType type) {
+    final idx = plant.careSchedules.indexWhere((s) => s.type == type);
+    return idx != -1 ? plant.careSchedules[idx].nextDate : null;
+  }
+
+  String _formatNextDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(date.year, date.month, date.day);
+    final diff = target.difference(today).inDays;
+
+    if (diff < 0) return 'Overdue';
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Tomorrow';
+    return 'In $diff days';
+  }
+
+  String _getAge(DateTime plantingDate) {
+    final diff = DateTime.now().difference(plantingDate).inDays;
+    if (diff == 0) return 'Planted today';
+    if (diff < 30) return '$diff days';
+    if (diff < 365) return '${(diff / 30).floor()} months';
+    return '${(diff / 365).floor()} years';
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, Plant plant) {

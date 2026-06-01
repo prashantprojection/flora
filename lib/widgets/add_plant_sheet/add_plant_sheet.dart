@@ -273,7 +273,18 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
 
         setState(() {
           _wateringScheduleController.text =
-              recommendations['frequency'].toString();
+              recommendations['wateringFrequency'].toString();
+              
+          final int fert = recommendations['fertilizingFrequency'] ?? 0;
+          if (fert > 0) {
+            _fertilizingScheduleController.text = fert.toString();
+          }
+          
+          final int prune = recommendations['pruningFrequency'] ?? 0;
+          if (prune > 0) {
+            _pruningScheduleController.text = prune.toString();
+          }
+          
           _careInstructionsController.text = recommendations['advice'] ?? '';
           // Store AI reasoning
           final rawReasoning = recommendations['reasoning'] as String? ?? '';

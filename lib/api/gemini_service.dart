@@ -37,7 +37,8 @@ class GeminiService {
     String additionalDetails = '',
   }) async {
     String prompt =
-        'You are a plant care expert. Provide concise, actionable care tips for a plant named "$plantName".';
+        'You are Flo AI, an expert and friendly plant care assistant. Provide comprehensive, actionable care tips for a plant named "$plantName". '
+        'Include advice on watering, fertilizing, pruning, and ambient light/temperature requirements.';
     if (species != null && species.isNotEmpty) {
       prompt += ' The species is $species.';
     }
@@ -83,7 +84,11 @@ class GeminiService {
     String? additionalDetails,
   }) async {
     String prompt =
-        'Analyze this image of a plant. Provide a detailed diagnosis.';
+        'You are Flo AI, a friendly plant care expert. First, verify if the image actually contains a plant. '
+        'If it does NOT contain a plant (e.g., it is a person, animal, or random object), identify what it is briefly but remind the user you are a plant expert. '
+        'Respond exactly with this markdown structure and nothing else:\n'
+        '## Diagnosis\n**This appears to be a [briefly identify the object], but I am Flo, a plant expert!**\n## Severity\n**None**\n## Notes\n**Please upload a clear image of a plant so I can help you diagnose it.**\n\n'
+        'If it DOES contain a plant, analyze it and provide a detailed diagnosis.';
     if (additionalDetails != null && additionalDetails.isNotEmpty) {
       prompt +=
           ' The user has provided these additional details and specific query: "$additionalDetails". Focus your diagnosis and recommendations based on these details, but also provide a general health assessment.';
@@ -92,7 +97,7 @@ class GeminiService {
           ' Provide a concise health diagnosis, identify any visible issues, and offer specific, actionable recommendations for improvement. If the plant appears healthy, state that clearly.';
     }
     prompt += '''
-Respond in Markdown format with the following structure:
+Respond in Markdown format with the following structure (if it is a plant):
 ## Diagnosis
 **[Your diagnosis here]**
 ## Severity
@@ -149,7 +154,7 @@ Respond in Markdown format with the following structure:
             'If indoor, suggest standard indoor frequency (7-14 days).';
 
     final prompt = '''
-You are a plant care expert. I am adding a new plant to my collection.
+You are Flo AI, a friendly and expert plant care assistant. I am adding a new plant to my collection.
 Name: "$plantName"
 Species: "${species ?? 'Unknown'}"
 Location: "$location"
@@ -163,23 +168,22 @@ If INVALID, set "isValid" to false.
 
 If VALID:
 1. $locationClause
-2. "frequency": Return an INTEGER representing days between watering.
-   - Do NOT return '1' (daily) unless it is strictly necessary (e.g., aquatic plant, seedling in heat).
-   - For most indoor plants, 7 is a safe average.
-   - Be consistent with standard care guides.
-3. IMPORTANT: Validate the watering frequency against known horticultural standards.
-   Examples: basil requires watering every 1-2 days; succulents every 14-21 days; tropical houseplants every 5-7 days.
-   If your suggested frequency deviates significantly from known standards, explain why in the advice field.
-4. "reasoning": Provide 2-3 concise bullet points explaining why this specific frequency was chosen
-   for this plant in this location (e.g. "Monstera prefers moderate humidity typical of Living Room conditions").
-   Each bullet should start with "• ".
+2. "wateringFrequency": Return an INTEGER representing days between watering.
+   - Do NOT return 1 (daily) unless strictly necessary. For most indoor plants, 7 is a safe average.
+3. "fertilizingFrequency": Return an INTEGER representing days between fertilizing. (e.g. 30 for monthly during growing season). If the plant doesn't need fertilizer often, use 90 or 180.
+4. "pruningFrequency": Return an INTEGER representing days between pruning. If the plant rarely needs pruning, use 180 or 365.
+5. "advice": Provide comprehensive care tips covering watering, fertilizing, pruning, and ambient light/temperature requirements. Format the tips by season:
+   Spring: [Detailed Tip]\nSummer: [Detailed Tip]\nAutumn: [Detailed Tip]\nWinter: [Detailed Tip]
+6. "reasoning": Provide 2-3 concise bullet points explaining why these specific frequencies were chosen. Each bullet should start with "• ".
 
 Respond STRICTLY in this JSON format:
 {
   "isValid": boolean,
-  "frequency": integer,
+  "wateringFrequency": integer,
+  "fertilizingFrequency": integer,
+  "pruningFrequency": integer,
   "advice": "Spring: [Tip]\\nSummer: [Tip]\\nAutumn: [Tip]\\nWinter: [Tip]",
-  "reasoning": "• Bullet 1\\n• Bullet 2\\n• Bullet 3"
+  "reasoning": "• Bullet 1\\n• Bullet 2"
 }
 Do not include markdown formatting like ```json. Just the raw JSON string.
 ''';
@@ -197,22 +201,24 @@ Do not include markdown formatting like ```json. Just the raw JSON string.
         return {'isValid': false};
       }
 
-      // Clamp frequency to sane bounds
-      int frequency = 7;
-      if (data['frequency'] is int) {
-        frequency = data['frequency'] as int;
-      } else if (data['frequency'] is String) {
-        frequency = int.tryParse(data['frequency'] as String) ?? 7;
+      // Parse frequencies
+      int parseFreq(dynamic value, int fallback) {
+        if (value is int) return value;
+        if (value is String) return int.tryParse(value) ?? fallback;
+        return fallback;
       }
-      if (frequency < 1 || frequency > 60) {
-        debugPrint(
-            '[GeminiService] Clamped absurd frequency $frequency → 7');
-        frequency = 7;
-      }
+
+      int wateringFreq = parseFreq(data['wateringFrequency'], 7);
+      if (wateringFreq < 1 || wateringFreq > 60) wateringFreq = 7;
+      
+      int fertFreq = parseFreq(data['fertilizingFrequency'], 30);
+      int pruneFreq = parseFreq(data['pruningFrequency'], 90);
 
       return {
         'isValid': true,
-        'frequency': frequency,
+        'wateringFrequency': wateringFreq,
+        'fertilizingFrequency': fertFreq,
+        'pruningFrequency': pruneFreq,
         'advice': data['advice'] ?? 'No specific advice generated.',
         'reasoning': data['reasoning'] ?? '',
       };
@@ -220,7 +226,9 @@ Do not include markdown formatting like ```json. Just the raw JSON string.
       debugPrint('[GeminiService] getPlantCareRecommendations failed: $e');
       return {
         'isValid': true,
-        'frequency': 7,
+        'wateringFrequency': 7,
+        'fertilizingFrequency': 30,
+        'pruningFrequency': 90,
         'advice': 'Could not generate specific advice. Water when topsoil is dry.',
         'reasoning': '',
       };
