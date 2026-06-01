@@ -5,13 +5,31 @@ class DiagnosisRecord {
   final String imagePath;
   final String diagnosis;
   final DateTime date;
+  final bool? isHelpful;
 
   DiagnosisRecord({
     required this.id,
     required this.imagePath,
     required this.diagnosis,
     required this.date,
+    this.isHelpful,
   });
+
+  DiagnosisRecord copyWith({
+    String? id,
+    String? imagePath,
+    String? diagnosis,
+    DateTime? date,
+    bool? isHelpful,
+  }) {
+    return DiagnosisRecord(
+      id: id ?? this.id,
+      imagePath: imagePath ?? this.imagePath,
+      diagnosis: diagnosis ?? this.diagnosis,
+      date: date ?? this.date,
+      isHelpful: isHelpful ?? this.isHelpful,
+    );
+  }
 }
 
 class DiagnosisRecordAdapter extends TypeAdapter<DiagnosisRecord> {
@@ -29,13 +47,14 @@ class DiagnosisRecordAdapter extends TypeAdapter<DiagnosisRecord> {
       imagePath: fields[1] as String,
       diagnosis: fields[2] as String,
       date: fields[3] as DateTime,
+      isHelpful: fields[4] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, DiagnosisRecord obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -43,6 +62,8 @@ class DiagnosisRecordAdapter extends TypeAdapter<DiagnosisRecord> {
       ..writeByte(2)
       ..write(obj.diagnosis)
       ..writeByte(3)
-      ..write(obj.date);
+      ..write(obj.date)
+      ..writeByte(4)
+      ..write(obj.isHelpful);
   }
 }

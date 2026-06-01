@@ -1,4 +1,6 @@
 enum CareType { watering, fertilizing, pruning, skipped }
+enum PlantStatus { active, quarantine, givenAway, deceased }
+enum PlantStage { seedling, cutting, mature }
 
 class CareEvent {
   final String id;

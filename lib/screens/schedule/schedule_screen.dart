@@ -166,15 +166,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                             return completed;
                           } else {
                             // Snooze
-                            ref
-                                .read(plantListProvider.notifier)
-                                .snoozePlant(task.plantId, type: task.type);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Snoozed for 1 day'),
-                              ),
-                            );
-                            return true; // Remove from list
+                            final snoozed = await _showSnoozeDialog(context, task);
+                            return snoozed;
                           }
                         },
                         child: ScheduleTaskCard(
@@ -183,19 +176,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                               ? () => _handleTaskCompletion(task)
                               : null,
                           onSnooze: isActionable
-                              ? () {
-                                  ref
-                                      .read(plantListProvider.notifier)
-                                      .snoozePlant(
-                                        task.plantId,
-                                        type: task.type,
-                                      );
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Snoozed for 1 day'),
-                                    ),
-                                  );
-                                }
+                              ? () => _showSnoozeDialog(context, task)
                               : null,
                           onSkip: isActionable
                               ? () {
@@ -383,5 +364,148 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       ),
     );
     return true;
+  }
+
+  Future<bool> _showSnoozeDialog(BuildContext context, UpcomingCareTask task) async {
+    final result = await showModalBottomSheet<_SnoozeResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: _SnoozeDialogWidget(task: task),
+      ),
+    );
+
+    if (result != null) {
+      if (!context.mounted) return false;
+      
+      ref.read(plantListProvider.notifier).snoozePlantWithDuration(
+            task.plantId,
+            type: task.type,
+            days: result.days,
+            notes: result.notes,
+          );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Snoozed for ${result.days} day${result.days > 1 ? 's' : ''}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      
+      return true;
+    }
+    return false;
+  }
+}
+
+class _SnoozeResult {
+  final int days;
+  final String notes;
+  _SnoozeResult(this.days, this.notes);
+}
+
+class _SnoozeDialogWidget extends StatefulWidget {
+  final UpcomingCareTask task;
+  const _SnoozeDialogWidget({required this.task});
+
+  @override
+  State<_SnoozeDialogWidget> createState() => _SnoozeDialogWidgetState();
+}
+
+class _SnoozeDialogWidgetState extends State<_SnoozeDialogWidget> {
+  int _selectedDays = 1;
+  final _notesController = TextEditingController();
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Snooze ${widget.task.type.name.capitalize()}',
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(LucideIcons.x),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Soil still wet? Choose how many days to push this task back.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              for (final days in [1, 2, 3]) ...[
+                Expanded(
+                  child: ChoiceChip(
+                    label: Text('+$days day${days > 1 ? 's' : ''}'),
+                    selected: _selectedDays == days,
+                    onSelected: (selected) {
+                      if (selected) setState(() => _selectedDays = days);
+                    },
+                    showCheckmark: false,
+                    selectedColor: theme.colorScheme.primaryContainer,
+                    labelStyle: TextStyle(
+                      color: _selectedDays == days ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface,
+                      fontWeight: _selectedDays == days ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                if (days < 3) const SizedBox(width: 8),
+              ],
+            ],
+          ),
+          const SizedBox(height: 24),
+          TextField(
+            controller: _notesController,
+            decoration: InputDecoration(
+              labelText: 'Notes (Optional)',
+              hintText: 'e.g. Soil still very moist',
+              prefixIcon: const Icon(LucideIcons.penLine, size: 20),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () {
+                Navigator.pop(context, _SnoozeResult(_selectedDays, _notesController.text.trim()));
+              },
+              child: const Text('Confirm Snooze'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+extension StringExtension on String {
+  String capitalize() {
+    if (isEmpty) return this;
+    return '${this[0].toUpperCase()}${substring(1)}';
   }
 }

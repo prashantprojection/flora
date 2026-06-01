@@ -44,6 +44,11 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
   bool _isGeneratingSuggestions = false;
   bool _isOtherSelected = false;
 
+  bool _hasGrowLight = false;
+  PlantStage _plantStage = PlantStage.mature;
+  PlantStatus _plantStatus = PlantStatus.active;
+  final _weatherLocationController = TextEditingController();
+
   // AI reasoning state
   String? _aiReasoning;
   // Track whether AI suggestions have been applied
@@ -86,6 +91,10 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
       if (widget.plant!.careInstructions != null) {
         _careInstructionsController.text = widget.plant!.careInstructions!;
       }
+      _hasGrowLight = widget.plant!.hasGrowLight;
+      _plantStage = widget.plant!.stage ?? PlantStage.mature;
+      _plantStatus = widget.plant!.status ?? PlantStatus.active;
+      _weatherLocationController.text = widget.plant!.weatherLocation ?? '';
     }
     _nameController.addListener(_validateForm);
     _dateController.addListener(_validateForm);
@@ -119,6 +128,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
     _fertilizingScheduleController.dispose();
     _pruningScheduleController.dispose();
     _careInstructionsController.dispose();
+    _weatherLocationController.dispose();
     super.dispose();
   }
 
@@ -260,6 +270,9 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
         plantName: _nameController.text,
         species: _speciesController.text,
         location: _locationController.text,
+        hasGrowLight: _hasGrowLight,
+        plantStage: _plantStage.name,
+        weatherLocation: _weatherLocationController.text,
       );
 
       if (mounted) {
@@ -378,6 +391,10 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
             : _careInstructionsController.text,
         careHistory: widget.plant?.careHistory ?? [],
         careSchedules: schedules,
+        status: _plantStatus,
+        stage: _plantStage,
+        hasGrowLight: _hasGrowLight,
+        weatherLocation: _weatherLocationController.text.isEmpty ? null : _weatherLocationController.text,
         // Persist AI reasoning if suggestions were applied
         aiReasoning: _aiSuggestionsApplied ? _aiReasoning : widget.plant?.aiReasoning,
         // Store location source
@@ -506,6 +523,14 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
                         isOtherSelected: _isOtherSelected,
                         onIsOtherSelectedChanged: (value) => setState(() => _isOtherSelected = value),
                         onLocationChanged: (value) => setState(() {}),
+                        isEditing: isEditing,
+                        plantStage: _plantStage,
+                        onStageChanged: (val) => setState(() => _plantStage = val),
+                        plantStatus: _plantStatus,
+                        onStatusChanged: (val) => setState(() => _plantStatus = val),
+                        hasGrowLight: _hasGrowLight,
+                        onGrowLightChanged: (val) => setState(() => _hasGrowLight = val),
+                        weatherLocationController: _weatherLocationController,
                       ),
                     ],
                   ),

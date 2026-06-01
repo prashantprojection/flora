@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/providers/plant_provider.dart';
+import 'package:flora/models/care_event.dart';
+import 'package:flora/widgets/custom_dropdown_button.dart';
 
 class AddPlantForm extends StatefulWidget {
   final GlobalKey<FormState> formKey;
@@ -49,7 +51,24 @@ class AddPlantForm extends StatefulWidget {
     required this.isOtherSelected,
     required this.onIsOtherSelectedChanged,
     required this.onLocationChanged,
+    required this.isEditing,
+    required this.plantStage,
+    required this.onStageChanged,
+    required this.plantStatus,
+    required this.onStatusChanged,
+    required this.hasGrowLight,
+    required this.onGrowLightChanged,
+    required this.weatherLocationController,
   });
+
+  final bool isEditing;
+  final PlantStage plantStage;
+  final ValueChanged<PlantStage> onStageChanged;
+  final PlantStatus plantStatus;
+  final ValueChanged<PlantStatus> onStatusChanged;
+  final bool hasGrowLight;
+  final ValueChanged<bool> onGrowLightChanged;
+  final TextEditingController weatherLocationController;
 
   @override
   State<AddPlantForm> createState() => _AddPlantFormState();
@@ -198,53 +217,13 @@ class _AddPlantFormState extends State<AddPlantForm> {
 
                     return Column(
                       children: [
-                        DropdownButtonFormField<String>(
-                          key: ValueKey(dropdownValue),
-                          initialValue: dropdownValue,
-                          isExpanded: true,
-                          icon: Icon(
-                            LucideIcons.chevronDown,
-                            size: 20,
-                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                          ),
-                          dropdownColor: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          elevation: 8,
-                          hint: Text(
-                            'Select Location',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                              fontWeight: FontWeight.normal,
-                            ),
-                          ),
-                          decoration: _buildInputDecoration(
-                            context,
-                            label: 'Location',
-                            hint: 'Select Location',
-                            icon: LucideIcons.mapPin,
-                          ),
-                          selectedItemBuilder: (BuildContext context) {
-                            return dropdownItems.map<Widget>((String loc) {
-                              return Text(
-                                loc,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: theme.colorScheme.onSurface,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              );
-                            }).toList();
-                          },
-                          items: dropdownItems.map((loc) {
-                            return DropdownMenuItem(
-                              value: loc,
-                              child: Text(
-                                loc,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            );
-                          }).toList(),
+                        CustomDropdownButton<String>(
+                          value: dropdownValue,
+                          label: 'Location',
+                          hint: 'Select Location',
+                          icon: LucideIcons.mapPin,
+                          items: dropdownItems,
+                          itemLabelBuilder: (loc) => loc,
                           onChanged: (value) {
                             if (value == 'Other') {
                               widget.onIsOtherSelectedChanged(true);
@@ -279,6 +258,40 @@ class _AddPlantFormState extends State<AddPlantForm> {
                     );
                   },
                 ),
+                const SizedBox(height: 16),
+                CustomDropdownButton<PlantStage>(
+                  value: widget.plantStage,
+                  label: 'Growth Stage',
+                  hint: 'Select stage',
+                  icon: LucideIcons.sprout,
+                  items: PlantStage.values,
+                  itemLabelBuilder: (stage) => stage.name[0].toUpperCase() + stage.name.substring(1),
+                  onChanged: (val) {
+                    if (val != null) widget.onStageChanged(val);
+                  },
+                ),
+                if (widget.isEditing) ...[
+                  const SizedBox(height: 16),
+                  CustomDropdownButton<PlantStatus>(
+                    value: widget.plantStatus,
+                    label: 'Plant Status',
+                    hint: 'Select status',
+                    icon: LucideIcons.activity,
+                    items: PlantStatus.values,
+                    itemLabelBuilder: (status) {
+                      const statusNames = {
+                        PlantStatus.active: 'Active',
+                        PlantStatus.quarantine: 'Quarantine',
+                        PlantStatus.givenAway: 'Given Away',
+                        PlantStatus.deceased: 'Deceased',
+                      };
+                      return statusNames[status]!;
+                    },
+                    onChanged: (val) {
+                      if (val != null) widget.onStatusChanged(val);
+                    },
+                  ),
+                ],
               ],
             ),
           ),
@@ -289,6 +302,30 @@ class _AddPlantFormState extends State<AddPlantForm> {
           _buildCard(
             child: Column(
               children: [
+                SwitchListTile(
+                  title: const Text('Grow Light'),
+                  subtitle: const Text('Plant is kept under a grow light'),
+                  secondary: Icon(LucideIcons.lamp, color: theme.colorScheme.primary),
+                  value: widget.hasGrowLight,
+                  onChanged: widget.onGrowLightChanged,
+                  contentPadding: EdgeInsets.zero,
+                  activeThumbColor: theme.colorScheme.primary,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: widget.weatherLocationController,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: _buildInputDecoration(
+                    context,
+                    label: 'Weather Location (Optional)',
+                    hint: 'City or Zip Code for climate advice',
+                    icon: LucideIcons.cloudSun,
+                  ),
+                ),
+                const SizedBox(height: 24),
                 if (widget.showAiTooltip)
                   GestureDetector(
                     onTap: widget.onDismissAiTooltip,

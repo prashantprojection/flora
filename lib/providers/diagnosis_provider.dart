@@ -25,8 +25,13 @@ class DiagnosisHistoryNotifier extends Notifier<List<DiagnosisRecord>> {
     _refresh();
   }
 
-  Future<void> deleteDiagnosis(int index) async {
-    await _repository.deleteDiagnosis(index);
+  Future<void> updateDiagnosisFeedback(String id, bool isHelpful) async {
+    await _repository.updateDiagnosisFeedback(id, isHelpful);
+    _refresh();
+  }
+
+  Future<void> deleteDiagnosis(String id) async {
+    await _repository.deleteDiagnosis(id);
     _refresh();
   }
 

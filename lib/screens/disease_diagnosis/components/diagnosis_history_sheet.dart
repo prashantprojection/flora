@@ -11,7 +11,7 @@ class DiagnosisHistorySheet extends ConsumerWidget {
 
   const DiagnosisHistorySheet({super.key, required this.onViewRecord});
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, int index) {
+  void _confirmDelete(BuildContext context, WidgetRef ref, String id) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -27,7 +27,7 @@ class DiagnosisHistorySheet extends ConsumerWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              ref.read(diagnosisHistoryProvider.notifier).deleteDiagnosis(index);
+              ref.read(diagnosisHistoryProvider.notifier).deleteDiagnosis(id);
             },
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.error,
@@ -163,7 +163,7 @@ class DiagnosisHistorySheet extends ConsumerWidget {
                   trailing: IconButton(
                     icon: const Icon(LucideIcons.trash2, size: 18),
                     onPressed: () {
-                      _confirmDelete(context, ref, index - 1);
+                      _confirmDelete(context, ref, record.id);
                     },
                   ),
                 );

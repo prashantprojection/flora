@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flora/api/api_service.dart';
+import 'package:flora/api/notification_service.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/models/care_event.dart';
 
@@ -44,6 +45,8 @@ class PlantListNotifier extends Notifier<List<Plant>> {
         if (plant.id == plantId) _handleCareEvent(plant, event) else plant,
     ];
     _savePlants();
+    final updatedPlant = state.firstWhere((p) => p.id == plantId, orElse: () => state.first);
+    ref.read(notificationServiceProvider).schedulePlantNotification(updatedPlant);
   }
 
   Plant _handleCareEvent(Plant plant, CareEvent event) {
@@ -89,18 +92,37 @@ class PlantListNotifier extends Notifier<List<Plant>> {
     return updatedPlant;
   }
 
-  void snoozePlant(String plantId, {CareType type = CareType.watering}) {
+  void snoozePlantWithDuration(String plantId, {required int days, String? notes, CareType type = CareType.watering}) {
     state = [
       for (final plant in state)
-        if (plant.id == plantId) _snoozePlantInternal(plant, type) else plant,
+        if (plant.id == plantId) _snoozePlantInternal(plant, type, days) else plant,
     ];
-    _savePlants();
+    
+    if (notes != null && notes.isNotEmpty) {
+      addCareEvent(
+        plantId,
+        CareEvent(
+          id: DateTime.now().toString(),
+          type: CareType.skipped,
+          date: DateTime.now(),
+          notes: notes,
+        ),
+      );
+    } else {
+      _savePlants();
+      final updatedPlant = state.firstWhere((p) => p.id == plantId, orElse: () => state.first);
+      ref.read(notificationServiceProvider).schedulePlantNotification(updatedPlant);
+    }
   }
 
-  Plant _snoozePlantInternal(Plant plant, CareType type) {
+  void snoozePlant(String plantId, {CareType type = CareType.watering}) {
+    snoozePlantWithDuration(plantId, days: 1, type: type);
+  }
+
+  Plant _snoozePlantInternal(Plant plant, CareType type, int days) {
     if (type == CareType.watering) {
       return plant.copyWith(
-        nextWatering: plant.nextWatering.add(const Duration(days: 1)),
+        nextWatering: plant.nextWatering.add(Duration(days: days)),
       );
     } else {
       // Snooze specific schedule
@@ -110,7 +132,7 @@ class PlantListNotifier extends Notifier<List<Plant>> {
       if (scheduleIndex != -1) {
         final schedule = plant.careSchedules[scheduleIndex];
         final newSchedule = schedule.copyWith(
-          nextDate: schedule.nextDate.add(const Duration(days: 1)),
+          nextDate: schedule.nextDate.add(Duration(days: days)),
         );
         final newSchedules = List<CareSchedule>.from(plant.careSchedules);
         newSchedules[scheduleIndex] = newSchedule;
@@ -175,6 +197,7 @@ class PlantListNotifier extends Notifier<List<Plant>> {
   void deletePlant(String plantId) {
     state = state.where((plant) => plant.id != plantId).toList();
     _savePlants();
+    ref.read(notificationServiceProvider).cancelPlantNotification(plantId);
   }
 
   void importPlants(List<Plant> plants, {required String duplicateStrategy}) {
@@ -208,6 +231,11 @@ class PlantListNotifier extends Notifier<List<Plant>> {
 final plantListProvider = NotifierProvider<PlantListNotifier, List<Plant>>(
   PlantListNotifier.new,
 );
+
+final activeGardenProvider = Provider<List<Plant>>((ref) {
+  final plants = ref.watch(plantListProvider);
+  return plants.where((p) => p.status == PlantStatus.active || p.status == PlantStatus.quarantine || p.status == null).toList();
+});
 
 final locationListProvider = Provider<List<String>>((ref) {
   final plants = ref.watch(plantListProvider);

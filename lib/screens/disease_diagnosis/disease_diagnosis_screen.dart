@@ -32,6 +32,7 @@ class _DiseaseDiagnosisScreenState
   bool _isLoading = false;
   String? _loadingMessage;
   String? _diagnosisResult;
+  String? _currentRecordId;
   final PlantClassifierService _classifierService = PlantClassifierService();
   final FlutterTts _flutterTts = FlutterTts();
   bool _isSpeaking = false;
@@ -80,6 +81,9 @@ class _DiseaseDiagnosisScreenState
   }
 
   Future<void> _pickImage(bool fromCamera) async {
+    // Always stop any in-progress speech before starting a new session
+    await _flutterTts.stop();
+    setState(() => _isSpeaking = false);
     try {
       final File? pickedFile = await ImagePickerService.pickImage(
         fromCamera: fromCamera,
@@ -164,11 +168,6 @@ class _DiseaseDiagnosisScreenState
         additionalDetails: _description,
       );
 
-      setState(() {
-        _diagnosisResult = result;
-      });
-
-      // Save to history automatically
       final record = DiagnosisRecord(
         id: const Uuid().v4(),
         imagePath: _selectedImage!.path,
@@ -176,6 +175,11 @@ class _DiseaseDiagnosisScreenState
         date: DateTime.now(),
       );
       ref.read(diagnosisHistoryProvider.notifier).addDiagnosis(record);
+
+      setState(() {
+        _diagnosisResult = result;
+        _currentRecordId = record.id;
+      });
     } catch (e) {
       _showErrorDialog("Failed to diagnose plant: $e");
     } finally {
@@ -230,11 +234,6 @@ class _DiseaseDiagnosisScreenState
         imageData,
         additionalDetails: _description,
       );
-      setState(() {
-        _diagnosisResult = result;
-      });
-
-      // Save to history automatically
       final record = DiagnosisRecord(
         id: const Uuid().v4(),
         imagePath: _selectedImage!.path,
@@ -242,6 +241,11 @@ class _DiseaseDiagnosisScreenState
         date: DateTime.now(),
       );
       ref.read(diagnosisHistoryProvider.notifier).addDiagnosis(record);
+
+      setState(() {
+        _diagnosisResult = result;
+        _currentRecordId = record.id;
+      });
     } catch (e) {
       _showErrorDialog("Failed to diagnose plant: $e");
     } finally {
@@ -270,11 +274,15 @@ class _DiseaseDiagnosisScreenState
   }
 
   void _resetState() {
+    // Stop TTS immediately — the result view is being dismissed
+    _flutterTts.stop();
     setState(() {
       _selectedImage = null;
       _description = null;
       _isLoading = false;
       _diagnosisResult = null;
+      _currentRecordId = null;
+      _isSpeaking = false;
     });
   }
 
@@ -284,6 +292,7 @@ class _DiseaseDiagnosisScreenState
           ? File(record.imagePath)
           : null;
       _diagnosisResult = record.diagnosis;
+      _currentRecordId = record.id;
     });
   }
 
@@ -296,6 +305,13 @@ class _DiseaseDiagnosisScreenState
         isSpeaking: _isSpeaking,
         onSpeak: _speakDiagnosis,
         onReset: _resetState,
+        initialFeedback: ref.watch(diagnosisHistoryProvider).firstWhere(
+            (r) => r.id == _currentRecordId, orElse: () => DiagnosisRecord(id: '', imagePath: '', diagnosis: '', date: DateTime.now())).isHelpful,
+        onFeedback: (isHelpful) {
+          if (_currentRecordId != null) {
+            ref.read(diagnosisHistoryProvider.notifier).updateDiagnosisFeedback(_currentRecordId!, isHelpful);
+          }
+        },
       );
     } else if (_selectedImage != null) {
       return DiagnosisPreviewView(

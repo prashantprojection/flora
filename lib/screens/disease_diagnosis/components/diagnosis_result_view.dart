@@ -13,6 +13,8 @@ class DiagnosisResultView extends StatelessWidget {
   final bool isSpeaking;
   final VoidCallback onSpeak;
   final VoidCallback onReset;
+  final bool? initialFeedback;
+  final ValueChanged<bool> onFeedback;
 
   const DiagnosisResultView({
     super.key,
@@ -21,6 +23,8 @@ class DiagnosisResultView extends StatelessWidget {
     required this.isSpeaking,
     required this.onSpeak,
     required this.onReset,
+    required this.initialFeedback,
+    required this.onFeedback,
   });
 
   // ── Parsing helpers ─────────────────────────────────────────────────────────
@@ -318,7 +322,10 @@ class DiagnosisResultView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const _DiagnosisFeedbackSection(),
+                _DiagnosisFeedbackSection(
+                  initialFeedback: initialFeedback,
+                  onFeedback: onFeedback,
+                ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
@@ -360,7 +367,13 @@ class DiagnosisResultView extends StatelessWidget {
 }
 
 class _DiagnosisFeedbackSection extends StatefulWidget {
-  const _DiagnosisFeedbackSection();
+  final bool? initialFeedback;
+  final ValueChanged<bool> onFeedback;
+
+  const _DiagnosisFeedbackSection({
+    required this.initialFeedback,
+    required this.onFeedback,
+  });
 
   @override
   State<_DiagnosisFeedbackSection> createState() => _DiagnosisFeedbackSectionState();
@@ -368,6 +381,16 @@ class _DiagnosisFeedbackSection extends StatefulWidget {
 
 class _DiagnosisFeedbackSectionState extends State<_DiagnosisFeedbackSection> {
   int _selectedFeedback = 0; // 0 = none, 1 = helpful, 2 = not quite
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialFeedback == true) {
+      _selectedFeedback = 1;
+    } else if (widget.initialFeedback == false) {
+      _selectedFeedback = 2;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -380,6 +403,7 @@ class _DiagnosisFeedbackSectionState extends State<_DiagnosisFeedbackSection> {
           isSelected: _selectedFeedback == 1,
           onTap: () {
             setState(() => _selectedFeedback = 1);
+            widget.onFeedback(true);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Thanks! Flo will keep improving 🌿'),
@@ -395,6 +419,7 @@ class _DiagnosisFeedbackSectionState extends State<_DiagnosisFeedbackSection> {
           isSelected: _selectedFeedback == 2,
           onTap: () {
             setState(() => _selectedFeedback = 2);
+            widget.onFeedback(false);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text("Thanks for the feedback! We'll improve Dr. Flo."),

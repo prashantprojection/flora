@@ -35,6 +35,9 @@ class GeminiService {
     required String plantingDate,
     required String location,
     String additionalDetails = '',
+    bool hasGrowLight = false,
+    String? plantStage,
+    String? weatherLocation,
   }) async {
     String prompt =
         'You are Flo AI, an expert and friendly plant care assistant. Provide comprehensive, actionable care tips for a plant named "$plantName". '
@@ -58,6 +61,16 @@ class GeminiService {
         'If they are in the Southern Hemisphere, reverse the seasons (e.g., December is summer). '
         'If the location is tropical or near the equator, note that seasons may be wet/dry rather than spring/summer/autumn/winter, '
         'and label the cards accordingly (e.g., "Wet Season" / "Dry Season").';
+
+    if (plantStage != null && plantStage != 'mature') {
+      prompt += ' Note that this plant is currently a $plantStage. Adjust care advice to be gentler and appropriate for its young stage.';
+    }
+    if (hasGrowLight) {
+      prompt += ' The plant is growing under a grow light. Factor in extended or consistent light exposure in your advice.';
+    }
+    if (weatherLocation != null && weatherLocation.isNotEmpty) {
+      prompt += ' The user\'s broader weather location/climate is $weatherLocation. Ensure advice fits this region.';
+    }
 
     if (additionalDetails.isNotEmpty) {
       prompt +=
@@ -102,8 +115,10 @@ Respond in Markdown format with the following structure (if it is a plant):
 **[Your diagnosis here]**
 ## Severity
 **[Low/Medium/High]**
-## Precautions
-**[List of actionable precautions and recommendations]**
+## Treatment Steps
+**[Numbered, concrete, step-by-step treatment plan]**
+## Prevention
+**[List of actionable precautions to prevent this issue in the future]**
 ''';
 
     final content = [
@@ -141,17 +156,28 @@ Respond in Markdown format with the following structure (if it is a plant):
     required String plantName,
     String? species,
     required String location,
+    bool hasGrowLight = false,
+    String? plantStage,
+    String? weatherLocation,
   }) async {
     final int month = DateTime.now().month;
 
     // Location-aware climate prompt
-    final locationClause = location.isNotEmpty
-        ? 'User is in "$location". Adjust watering frequency for this climate. '
-            'If this is a tropical or monsoon climate, account for wet/dry seasons. '
-            'If outdoor (Garden, Patio, Balcony, Backyard), suggest higher frequency (2-4 days). '
-            'If indoor (Living Room, Bedroom, Office), suggest standard indoor frequency (7-14 days).'
-        : 'If outdoor location, suggest higher watering frequency (2-4 days). '
-            'If indoor, suggest standard indoor frequency (7-14 days).';
+    String locationClause = location.isNotEmpty
+        ? 'User is in room "$location". '
+        : '';
+    if (weatherLocation != null && weatherLocation.isNotEmpty) {
+      locationClause += 'The local climate is "$weatherLocation". Adjust watering frequency for this climate. '
+          'If this is a tropical or monsoon climate, account for wet/dry seasons. ';
+    }
+    if (hasGrowLight) {
+      locationClause += 'The plant is under a grow light (extended daylight). ';
+    }
+    if (plantStage != null && plantStage != 'mature') {
+      locationClause += 'The plant is a $plantStage, so it may need gentler, more frequent watering. ';
+    }
+    locationClause += 'If outdoor location, suggest higher watering frequency (2-4 days). '
+        'If indoor, suggest standard indoor frequency (7-14 days).';
 
     final prompt = '''
 You are Flo AI, a friendly and expert plant care assistant. I am adding a new plant to my collection.

@@ -210,21 +210,25 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
         backgroundColor:
             theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: theme.colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             LucideIcons.databaseBackup,
             color: theme.colorScheme.primary,
-            size: 20,
+            size: 18,
           ),
         ),
-        title: Text(
-          'Backup & Household Share',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Backup & Share',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         subtitle: Text(

@@ -129,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Consumer(
                 builder: (context, ref, child) {
                   final locations = ref.watch(locationListProvider);
-                  final filters = ['All', ...locations];
+                  final filters = ['All', 'Archive', ...locations];
                   return Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -176,6 +176,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     };
 
     final plants = allPlants.where((p) {
+      if (_selectedFilter == 'Archive') {
+        return p.status == PlantStatus.givenAway || p.status == PlantStatus.deceased;
+      }
+      final bool isActive = p.status == PlantStatus.active || p.status == PlantStatus.quarantine || p.status == null;
+      if (!isActive) return false;
+
       final matchesSearch =
           p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (p.species?.toLowerCase().contains(_searchQuery.toLowerCase()) ??
@@ -185,8 +191,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return matchesSearch && matchesFilter;
     }).toList();
 
-    final plantsNeedingCare =
-        plants.where((p) => careStatuses[p.id]!['needsCare'] as bool).toList()
+    final plantsNeedingCare = _selectedFilter == 'Archive'
+        ? <Plant>[]
+        : plants.where((p) => careStatuses[p.id]!['needsCare'] as bool).toList()
           ..sort(
             (a, b) =>
                 (careStatuses[b.id]!['overdue'] as int) -
@@ -262,9 +269,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                plantsNeedingCare.isNotEmpty
-                                    ? 'Thriving Plants'
-                                    : 'Your Collection',
+                                _selectedFilter == 'Archive'
+                                    ? 'Archived Plants'
+                                    : plantsNeedingCare.isNotEmpty
+                                        ? 'Thriving Plants'
+                                        : 'Your Collection',
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),

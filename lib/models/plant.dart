@@ -14,6 +14,11 @@ class Plant {
   final List<CareEvent> careHistory;
   final List<CareSchedule> careSchedules;
 
+  final PlantStatus? status;
+  final PlantStage? stage;
+  final bool hasGrowLight;
+  final String? weatherLocation;
+
   // Gemini reasoning for watering frequency
   final String? aiReasoning;
   // Timestamp for "Last updated" label in AICareTips
@@ -34,6 +39,10 @@ class Plant {
     this.careInstructions,
     required this.careHistory,
     this.careSchedules = const [],
+    this.status,
+    this.stage,
+    this.hasGrowLight = false,
+    this.weatherLocation,
     this.aiReasoning,
     this.aiTipsGeneratedAt,
     this.aiTipsSource,
@@ -52,6 +61,10 @@ class Plant {
     String? careInstructions,
     List<CareEvent>? careHistory,
     List<CareSchedule>? careSchedules,
+    PlantStatus? status,
+    PlantStage? stage,
+    bool? hasGrowLight,
+    String? weatherLocation,
     String? aiReasoning,
     DateTime? aiTipsGeneratedAt,
     String? aiTipsSource,
@@ -73,6 +86,10 @@ class Plant {
       careInstructions: careInstructions ?? this.careInstructions,
       careHistory: careHistory ?? this.careHistory,
       careSchedules: careSchedules ?? this.careSchedules,
+      status: status ?? this.status,
+      stage: stage ?? this.stage,
+      hasGrowLight: hasGrowLight ?? this.hasGrowLight,
+      weatherLocation: weatherLocation ?? this.weatherLocation,
       aiReasoning: clearAiReasoning ? null : (aiReasoning ?? this.aiReasoning),
       aiTipsGeneratedAt: clearAiTipsGeneratedAt
           ? null
@@ -117,6 +134,20 @@ class Plant {
               ?.map((e) => CareSchedule.fromJson(e))
               .toList() ??
           [],
+      status: json['status'] != null
+          ? PlantStatus.values.firstWhere(
+              (e) => e.toString() == json['status'],
+              orElse: () => PlantStatus.active,
+            )
+          : PlantStatus.active,
+      stage: json['stage'] != null
+          ? PlantStage.values.firstWhere(
+              (e) => e.toString() == json['stage'],
+              orElse: () => PlantStage.mature,
+            )
+          : PlantStage.mature,
+      hasGrowLight: json['hasGrowLight'] ?? false,
+      weatherLocation: json['weatherLocation'],
       // New nullable fields — safe fallback for old persisted data
       aiReasoning: json['aiReasoning'] as String?,
       aiTipsGeneratedAt: json['aiTipsGeneratedAt'] != null
@@ -140,6 +171,10 @@ class Plant {
       'careInstructions': careInstructions,
       'careHistory': careHistory.map((e) => e.toJson()).toList(),
       'careSchedules': careSchedules.map((e) => e.toJson()).toList(),
+      'status': status?.toString() ?? PlantStatus.active.toString(),
+      'stage': stage?.toString() ?? PlantStage.mature.toString(),
+      'hasGrowLight': hasGrowLight,
+      'weatherLocation': weatherLocation,
       'aiReasoning': aiReasoning,
       'aiTipsGeneratedAt': aiTipsGeneratedAt?.toIso8601String(),
       'aiTipsSource': aiTipsSource,

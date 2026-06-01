@@ -60,7 +60,7 @@ class _SupportScreenState extends State<SupportScreen> {
 
           // ── Content ───────────────────────────────────────────────
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+            padding: const EdgeInsets.fromLTRB(16, 32, 16, 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 // Section label

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/plant.dart';
+import 'package:flora/models/care_event.dart';
 import 'package:flora/utils/app_theme.dart';
 
 class PlantCard extends StatelessWidget {
@@ -140,6 +141,24 @@ class PlantCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                    // Status/Stage badges
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (plant.status == PlantStatus.quarantine)
+                            _buildTopLeftBadge(theme, 'Quarantine', Colors.amber.shade700, LucideIcons.shieldAlert),
+                          if (plant.status == PlantStatus.givenAway || plant.status == PlantStatus.deceased)
+                            _buildTopLeftBadge(theme, 'Archived', Colors.grey.shade700, LucideIcons.archive),
+                          if (plant.stage == PlantStage.seedling)
+                            _buildTopLeftBadge(theme, 'Seedling', Colors.green.shade600, LucideIcons.sprout),
+                          if (plant.stage == PlantStage.cutting)
+                            _buildTopLeftBadge(theme, 'Cutting', Colors.teal.shade600, LucideIcons.scissors),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -253,6 +272,39 @@ class PlantCard extends StatelessWidget {
       fit: BoxFit.cover,
       cacheWidth: 500,
       errorBuilder: (_, __, ___) => placeholder,
+    );
+  }
+
+  Widget _buildTopLeftBadge(ThemeData theme, String text, Color color, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(right: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

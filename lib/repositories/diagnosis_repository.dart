@@ -32,14 +32,29 @@ class DiagnosisRepository {
     await _box.add(newRecord);
   }
 
-  Future<void> deleteDiagnosis(int index) async {
-    final record = _box.getAt(index);
-    if (record != null) {
+  Future<void> updateDiagnosisFeedback(String id, bool isHelpful) async {
+    final key = _box.keys.firstWhere(
+      (k) => _box.get(k)?.id == id,
+      orElse: () => null,
+    );
+    if (key != null) {
+      final record = _box.get(key)!;
+      await _box.put(key, record.copyWith(isHelpful: isHelpful));
+    }
+  }
+
+  Future<void> deleteDiagnosis(String id) async {
+    final key = _box.keys.firstWhere(
+      (k) => _box.get(k)?.id == id,
+      orElse: () => null,
+    );
+    if (key != null) {
+      final record = _box.get(key)!;
       final file = File(record.imagePath);
       if (await file.exists()) {
         await file.delete();
       }
-      await _box.deleteAt(index);
+      await _box.delete(key);
     }
   }
 

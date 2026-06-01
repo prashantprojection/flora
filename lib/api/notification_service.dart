@@ -2,7 +2,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:flora/models/plant.dart';
+import 'package:flora/models/care_event.dart';
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -64,9 +65,61 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time, // Repeats daily
     );
+  }
+
+  Future<void> schedulePlantNotification(Plant plant) async {
+    final int notificationId = plant.id.hashCode.abs();
+    final now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+      tz.local,
+      plant.nextWatering.year,
+      plant.nextWatering.month,
+      plant.nextWatering.day,
+      12, // Noon
+    );
+    
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = now.add(const Duration(minutes: 1));
+    }
+
+    await _notificationsPlugin.zonedSchedule(
+      notificationId,
+      'Time to water ${plant.name}!',
+      'Your plant needs some attention 🌱',
+      scheduledDate,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'plant_care_channel',
+          'Plant Care Reminders',
+          channelDescription: 'Reminds you when specific plants need care',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
+  }
+
+  Future<void> cancelPlantNotification(String plantId) async {
+    await _notificationsPlugin.cancel(plantId.hashCode.abs());
+  }
+
+  Future<void> rescheduleAllPlantNotifications(List<Plant> plants) async {
+    await cancelAll();
+    if (plants.isEmpty) {
+      await scheduleDailyReminder();
+      return;
+    }
+    
+    for (final plant in plants) {
+      if (plant.status == PlantStatus.active || plant.status == PlantStatus.quarantine || plant.status == null) {
+        await schedulePlantNotification(plant);
+      }
+    }
   }
 
   Future<void> cancelAll() async {

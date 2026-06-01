@@ -20,6 +20,18 @@ class PlantClassifierService {
     'Vase', // Often contains flowers
     'Petal',
     'Botany',
+    'Fruit',
+    'Crop',
+    'Garden',
+    'Cactus',
+    'Succulent',
+    'Moss',
+    'Fern',
+    'Bamboo',
+    'Palm tree',
+    'Pine',
+    'Oak',
+    'Maple',
   ];
 
   /// Analyzes the image at [imagePath] and returns true if it likely contains a plant.
@@ -27,10 +39,10 @@ class PlantClassifierService {
   Future<bool> isPlant(String imagePath) async {
     final InputImage inputImage = InputImage.fromFilePath(imagePath);
 
-    // Confidence threshold: 0.5 is a good balance.
+    // Confidence threshold: 0.35 is a good balance.
     // We don't want to be too strict, just filter out obvious non-plants (shoes, cars).
     final ImageLabelerOptions options = ImageLabelerOptions(
-      confidenceThreshold: 0.5,
+      confidenceThreshold: 0.35,
     );
     final imageLabeler = ImageLabeler(options: options);
 
@@ -70,7 +82,7 @@ class PlantClassifierService {
   Future<String?> getBestPlantLabel(String imagePath) async {
     final InputImage inputImage = InputImage.fromFilePath(imagePath);
     final ImageLabelerOptions options = ImageLabelerOptions(
-      confidenceThreshold: 0.5,
+      confidenceThreshold: 0.35,
     );
     final imageLabeler = ImageLabeler(options: options);
 
