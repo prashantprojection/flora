@@ -26,7 +26,7 @@ class HomeEmptyState extends StatelessWidget {
                   'assets/images/empty_pot.png',
                   // 'assets/images/empty_garden.png',
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primaryContainer

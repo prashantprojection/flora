@@ -135,7 +135,7 @@ class DiagnosisHistorySheet extends ConsumerWidget {
                               fit: BoxFit.cover,
                               cacheWidth: 240,
                               gaplessPlayback: true,
-                              errorBuilder: (_, __, ___) => Container(
+                              errorBuilder: (_, _, _) => Container(
                                 width: 60,
                                 height: 60,
                                 color: Colors.grey[300],

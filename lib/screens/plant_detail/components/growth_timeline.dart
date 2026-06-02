@@ -303,7 +303,7 @@ class GrowthTimeline extends StatelessWidget {
       PageRouteBuilder(
         opaque: false,
         barrierDismissible: true,
-        pageBuilder: (context, _, __) {
+        pageBuilder: (context, _, _) {
           return _FullScreenImageViewer(path: path, title: title);
         },
       ),

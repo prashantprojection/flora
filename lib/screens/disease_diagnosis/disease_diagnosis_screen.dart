@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flora/models/diagnosis_data.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flora/services/image_service.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-import 'package:flora/api/gemini_service.dart';
+import 'package:flora/services/ai_service.dart';
 import 'package:flora/utils/network_utils.dart';
 import 'package:flora/services/plant_classifier_service.dart';
 import 'package:flora/providers/diagnosis_provider.dart';
@@ -160,7 +161,7 @@ class _DiseaseDiagnosisScreenState
     });
 
     try {
-      final geminiService = ref.read(geminiServiceProvider);
+      final geminiService = ref.read(aiServiceProvider);
       final imageData = await _selectedImage!.readAsBytes();
 
       final result = await geminiService.analyzePlantImage(
@@ -228,7 +229,7 @@ class _DiseaseDiagnosisScreenState
       _loadingMessage = "Consulting AI Botanist...";
     });
     try {
-      final geminiService = ref.read(geminiServiceProvider);
+      final geminiService = ref.read(aiServiceProvider);
       final imageData = await _selectedImage!.readAsBytes();
       final result = await geminiService.analyzePlantImage(
         imageData,
@@ -299,9 +300,11 @@ class _DiseaseDiagnosisScreenState
   @override
   Widget build(BuildContext context) {
     if (_diagnosisResult != null) {
+      final diagnosisData = DiagnosisData.fromString(_diagnosisResult!);
+
       return DiagnosisResultView(
         selectedImage: _selectedImage,
-        diagnosisResult: _diagnosisResult!,
+        data: diagnosisData,
         isSpeaking: _isSpeaking,
         onSpeak: _speakDiagnosis,
         onReset: _resetState,

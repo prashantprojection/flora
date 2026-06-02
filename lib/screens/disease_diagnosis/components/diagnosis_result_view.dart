@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/services/platform_share_service.dart';
 import 'package:flora/utils/app_theme.dart';
+import 'package:flora/models/diagnosis_data.dart';
 import 'package:flora/screens/disease_diagnosis/components/diagnosis_section_card.dart';
 import 'package:flora/screens/disease_diagnosis/components/diagnosis_bullet_list.dart';
 import 'package:flora/screens/disease_diagnosis/components/diagnosis_feedback_button.dart';
 
 class DiagnosisResultView extends StatelessWidget {
   final File? selectedImage;
-  final String diagnosisResult;
+  final DiagnosisData data;
   final bool isSpeaking;
   final VoidCallback onSpeak;
   final VoidCallback onReset;
@@ -19,7 +20,7 @@ class DiagnosisResultView extends StatelessWidget {
   const DiagnosisResultView({
     super.key,
     required this.selectedImage,
-    required this.diagnosisResult,
+    required this.data,
     required this.isSpeaking,
     required this.onSpeak,
     required this.onReset,
@@ -27,40 +28,10 @@ class DiagnosisResultView extends StatelessWidget {
     required this.onFeedback,
   });
 
-  // ── Parsing helpers ─────────────────────────────────────────────────────────
-
-  String? _extractSection(String text, String heading) {
-    final regex = RegExp(
-      r'##\s*' + RegExp.escape(heading) + r'[\s\S]*?\n([\s\S]*?)(?=\n##|\s*$)',
-      caseSensitive: false,
-    );
-    final match = regex.firstMatch(text);
-    return match?.group(1)?.trim();
-  }
-
-  String? _extractInlineValue(String text, String heading) {
-    final regex = RegExp(
-      r'##\s*' + RegExp.escape(heading) + r'[\s\S]*?\*\*(.*?)\*\*',
-      caseSensitive: false,
-    );
-    return regex.firstMatch(text)?.group(1)?.trim();
-  }
-
-  /// Parse bullet points / numbered list into clean strings.
-  List<String> _parseBullets(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return [];
-    return raw
-        .split('\n')
-        .map((l) => l.replaceAll(RegExp(r'^[\s*\-•\d\.]+'), '').trim())
-        .where((l) => l.isNotEmpty)
-        .toList();
-  }
-
   // ── Severity parsing ────────────────────────────────────────────────────────
 
   ({String label, Color color, Color bg, IconData icon}) _severity() {
-    final raw = _extractInlineValue(diagnosisResult, 'Severity') ?? '';
-    final sev = raw.toLowerCase();
+    final sev = data.severity.toLowerCase();
     if (sev == 'low') {
       return (
         label: 'Low Severity',
@@ -95,17 +66,6 @@ class DiagnosisResultView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final sev = _severity();
-
-    // Extract named disease / health condition from the first ## heading or first bold
-    final nameMatch = RegExp(r'##\s*(.+)').firstMatch(diagnosisResult);
-    final diseaseName = nameMatch?.group(1)?.trim() ?? "Plant Analysis";
-
-    final symptoms = _parseBullets(_extractSection(diagnosisResult, 'Symptoms'));
-    final causes = _parseBullets(_extractSection(diagnosisResult, 'Cause'));
-    final treatment = _parseBullets(_extractSection(diagnosisResult, 'Treatment'));
-    final prevention = _parseBullets(_extractSection(diagnosisResult, 'Prevention'));
-    final additionalNotes = _extractSection(diagnosisResult, 'Additional Notes') ??
-        _extractSection(diagnosisResult, 'Notes');
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -156,9 +116,18 @@ class DiagnosisResultView extends StatelessWidget {
                 ),
                 onPressed: () {
                   if (selectedImage != null) {
+                    final report = StringBuffer();
+                    report.writeln('Flora Diagnosis Report: ${data.diseaseName}');
+                    report.writeln('Severity: ${data.severity}');
+                    if (data.treatment.isNotEmpty) {
+                      report.writeln('\nTreatment:');
+                      for (final t in data.treatment) {
+                        report.writeln('- $t');
+                      }
+                    }
                     PlatformShareService.shareFiles(
                       [selectedImage!.path],
-                      text: 'Flora Diagnosis Report:\n\n$diagnosisResult',
+                      text: report.toString(),
                     );
                   }
                 },
@@ -172,7 +141,7 @@ class DiagnosisResultView extends StatelessWidget {
                               selectedImage!,
                               fit: BoxFit.cover,
                               cacheWidth: 800,
-                              errorBuilder: (_, __, ___) =>
+                              errorBuilder: (_, _, _) =>
                                   _imagePlaceholder(context),
                             )
                           : _imagePlaceholder(context),
@@ -192,7 +161,7 @@ class DiagnosisResultView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        diseaseName,
+                        data.diseaseName,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppTheme.foreground,
@@ -244,62 +213,62 @@ class DiagnosisResultView extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // ── Symptoms ─────────────────────────────────────────
-                if (symptoms.isNotEmpty) ...[
+                if (data.symptoms.isNotEmpty) ...[
                   DiagnosisSectionCard(
                     icon: LucideIcons.microscope,
                     title: 'Symptoms',
                     color: const Color(0xFF7B1FA2),
                     bg: const Color(0xFFF3E5F5),
-                    child: DiagnosisBulletList(items: symptoms, color: const Color(0xFF7B1FA2)),
+                    child: DiagnosisBulletList(items: data.symptoms, color: const Color(0xFF7B1FA2)),
                   ),
                   const SizedBox(height: 12),
                 ],
 
                 // ── Cause ────────────────────────────────────────────
-                if (causes.isNotEmpty) ...[
+                if (data.causes.isNotEmpty) ...[
                   DiagnosisSectionCard(
                     icon: LucideIcons.searchCode,
                     title: 'Cause',
                     color: const Color(0xFFBF360C),
                     bg: const Color(0xFFFBE9E7),
-                    child: DiagnosisBulletList(items: causes, color: const Color(0xFFBF360C)),
+                    child: DiagnosisBulletList(items: data.causes, color: const Color(0xFFBF360C)),
                   ),
                   const SizedBox(height: 12),
                 ],
 
                 // ── Treatment ────────────────────────────────────────
-                if (treatment.isNotEmpty) ...[
+                if (data.treatment.isNotEmpty) ...[
                   DiagnosisSectionCard(
                     icon: LucideIcons.stethoscope,
                     title: 'Treatment',
                     color: const Color(0xFF1B5E20),
                     bg: const Color(0xFFE8F5E9),
-                    child: DiagnosisBulletList(items: treatment, color: const Color(0xFF1B5E20)),
+                    child: DiagnosisBulletList(items: data.treatment, color: const Color(0xFF1B5E20)),
                   ),
                   const SizedBox(height: 12),
                 ],
 
                 // ── Prevention ───────────────────────────────────────
-                if (prevention.isNotEmpty) ...[
+                if (data.prevention.isNotEmpty) ...[
                   DiagnosisSectionCard(
                     icon: LucideIcons.shieldCheck,
                     title: 'Prevention',
                     color: const Color(0xFF01579B),
                     bg: const Color(0xFFE3F2FD),
-                    child: DiagnosisBulletList(items: prevention, color: const Color(0xFF01579B)),
+                    child: DiagnosisBulletList(items: data.prevention, color: const Color(0xFF01579B)),
                   ),
                   const SizedBox(height: 12),
                 ],
 
                 // ── Additional Notes (fallback raw text) ─────────────
-                if (additionalNotes != null && additionalNotes.isNotEmpty) ...[
+                if (data.additionalNotes != null && data.additionalNotes!.isNotEmpty) ...[
                   DiagnosisSectionCard(
                     icon: LucideIcons.notebookPen,
                     title: 'Additional Notes',
                     color: AppTheme.mutedForeground,
                     bg: AppTheme.muted,
                     child: Text(
-                      additionalNotes,
+                      data.additionalNotes!,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         height: 1.55,
                         color: AppTheme.foreground,

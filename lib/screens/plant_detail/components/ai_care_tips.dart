@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flora/api/gemini_service.dart';
+import 'package:flora/services/ai_service.dart';
 import 'package:flora/models/plant.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:intl/intl.dart';
@@ -64,8 +64,8 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
     });
 
     try {
-      final geminiService = ref.read(geminiServiceProvider);
-      final result = await geminiService.generateCareTips(
+      final aiService = ref.read(aiServiceProvider);
+      final stream = aiService.generateCareTipsStream(
         plantName: widget.plant.name,
         species: widget.plant.species,
         plantingDate: DateFormat(
@@ -75,16 +75,25 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
         additionalDetails: _additionalDetailsController.text,
       );
 
-      if (result.isNotEmpty) {
+      // Stop the loading spinner immediately when streaming starts
+      setState(() {
+        _loading = false;
+      });
+
+      await for (final chunk in stream) {
+        if (!mounted) break;
+        setState(() {
+          _careTips += chunk;
+        });
+      }
+
+      if (_careTips.isNotEmpty) {
         final updatedPlant = widget.plant.copyWith(
-          careInstructions: result,
+          careInstructions: _careTips,
           aiTipsGeneratedAt: DateTime.now(),
           aiTipsSource: widget.plant.location,
         );
         ref.read(plantListProvider.notifier).updatePlant(updatedPlant);
-        setState(() {
-          _careTips = result;
-        });
       } else {
         throw Exception('No tips were generated.');
       }
@@ -96,7 +105,6 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
-    } finally {
       setState(() {
         _loading = false;
       });
@@ -529,7 +537,7 @@ class _SeasonalCarouselState extends State<_SeasonalCarousel> {
                 Image.asset(
                   assetName,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     color: theme.colorScheme.surfaceContainerHighest,
                   ),
                 ),

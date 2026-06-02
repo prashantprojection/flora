@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/models/care_event.dart';
 class NotificationService {
@@ -10,6 +11,8 @@ class NotificationService {
 
   Future<void> init() async {
     tz.initializeTimeZones();
+    final timezone = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timezone.identifier));
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -30,7 +33,7 @@ class NotificationService {
           macOS: initializationSettingsDarwin,
         );
 
-    await _notificationsPlugin.initialize(initializationSettings);
+    await _notificationsPlugin.initialize(settings: initializationSettings);
   }
 
   Future<void> requestPermissions() async {
@@ -51,11 +54,11 @@ class NotificationService {
     // We will stick to a simple daily reminder for 9 AM.
 
     await _notificationsPlugin.zonedSchedule(
-      0, // ID
-      'Flora Reminder',
-      'Time to check on your plants! 🌱',
-      _nextInstanceOfNineAM(),
-      const NotificationDetails(
+      id: 0, // ID
+      title: 'Flora Reminder',
+      body: 'Time to check on your plants! 🌱',
+      scheduledDate: _nextInstanceOfNineAM(),
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'daily_reminder_channel',
           'Daily Reminders',
@@ -85,27 +88,42 @@ class NotificationService {
       scheduledDate = now.add(const Duration(minutes: 1));
     }
 
+    BigPictureStyleInformation? bigPictureStyleInformation;
+    if (plant.imagePath != null && plant.imagePath!.isNotEmpty) {
+      bigPictureStyleInformation = BigPictureStyleInformation(
+        FilePathAndroidBitmap(plant.imagePath!),
+        hideExpandedLargeIcon: true,
+        contentTitle: 'Time to water ${plant.name}!',
+        summaryText: 'Your plant needs some attention 🌱',
+      );
+    }
+
     await _notificationsPlugin.zonedSchedule(
-      notificationId,
-      'Time to water ${plant.name}!',
-      'Your plant needs some attention 🌱',
-      scheduledDate,
-      const NotificationDetails(
+      id: notificationId,
+      title: 'Time to water ${plant.name}!',
+      body: 'Your plant needs some attention 🌱',
+      scheduledDate: scheduledDate,
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           'plant_care_channel',
           'Plant Care Reminders',
           channelDescription: 'Reminds you when specific plants need care',
           importance: Importance.high,
           priority: Priority.high,
+          styleInformation: bigPictureStyleInformation,
         ),
-        iOS: DarwinNotificationDetails(),
+        iOS: DarwinNotificationDetails(
+          attachments: plant.imagePath != null && plant.imagePath!.isNotEmpty
+              ? [DarwinNotificationAttachment(plant.imagePath!)]
+              : null,
+        ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
 
   Future<void> cancelPlantNotification(String plantId) async {
-    await _notificationsPlugin.cancel(plantId.hashCode.abs());
+    await _notificationsPlugin.cancel(id: plantId.hashCode.abs());
   }
 
   Future<void> rescheduleAllPlantNotifications(List<Plant> plants) async {

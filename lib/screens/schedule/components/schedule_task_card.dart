@@ -57,9 +57,10 @@ class ScheduleTaskCard extends StatelessWidget {
           'color': Colors.orange,
         };
       case CareType.skipped:
+      case CareType.snoozed:
         return {
           'icon': LucideIcons.skipForward,
-          'label': 'Skipped',
+          'label': type == CareType.snoozed ? 'Snoozed' : 'Skipped',
           'color': Colors.grey,
         };
     }

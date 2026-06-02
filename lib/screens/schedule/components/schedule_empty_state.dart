@@ -21,7 +21,7 @@ class ScheduleEmptyState extends StatelessWidget {
               child: Image.asset(
                 'assets/images/flo_schedule_complete.png',
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHighest.withValues(

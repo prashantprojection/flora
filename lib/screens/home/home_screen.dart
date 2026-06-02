@@ -34,7 +34,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notificationService = ref.read(notificationServiceProvider);
       notificationService.requestPermissions();
-      notificationService.scheduleDailyReminder();
     });
   }
 

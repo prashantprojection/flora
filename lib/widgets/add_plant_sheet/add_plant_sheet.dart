@@ -9,7 +9,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/providers/plant_provider.dart';
 import 'package:flora/utils/app_theme.dart';
-import 'package:flora/api/gemini_service.dart';
+import 'package:flora/services/ai_service.dart';
 import 'package:flora/services/plant_classifier_service.dart';
 import 'package:flora/providers/connectivity_provider.dart';
 import 'package:flora/services/preferences_service.dart';
@@ -87,7 +87,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
         _pruningScheduleController.text = pruning.frequency.toString();
       }
 
-      _initialImageUrl = widget.plant!.imageUrl;
+      _initialImageUrl = widget.plant!.imagePath;
       if (widget.plant!.careInstructions != null) {
         _careInstructionsController.text = widget.plant!.careInstructions!;
       }
@@ -265,7 +265,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
     });
 
     try {
-      final geminiService = ref.read(geminiServiceProvider);
+      final geminiService = ref.read(aiServiceProvider);
       final recommendations = await geminiService.getPlantCareRecommendations(
         plantName: _nameController.text,
         species: _speciesController.text,
@@ -388,7 +388,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
         species: _speciesController.text.isEmpty
             ? null
             : _speciesController.text,
-        imageUrl: imageUrl,
+        imagePath: imageUrl,
         plantingDate: _selectedDate!,
         location: _locationController.text,
         lastWatered: lastWatered,

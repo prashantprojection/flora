@@ -202,26 +202,26 @@ class PlantDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildPlantImage(Plant plant) {
-    if (plant.imageUrl == null) {
+    if (plant.imagePath == null) {
       return Container(
         color: Colors.green.shade100,
         child: const Icon(LucideIcons.flower2, size: 80, color: Colors.green),
       );
     }
-    if (plant.imageUrl!.startsWith('http')) {
+    if (plant.imagePath!.startsWith('http')) {
       return Image.network(
-        plant.imageUrl!,
+        plant.imagePath!,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
+        errorBuilder: (_, _, _) => Container(
           color: Colors.grey.shade200,
           child: const Icon(LucideIcons.imageOff),
         ),
       );
     }
     return Image.file(
-      File(plant.imageUrl!),
+      File(plant.imagePath!),
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Container(
+      errorBuilder: (_, _, _) => Container(
         color: Colors.grey.shade200,
         child: const Icon(LucideIcons.imageOff),
       ),

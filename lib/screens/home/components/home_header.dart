@@ -76,7 +76,7 @@ class HomeHeader extends StatelessWidget {
                   child: Image.asset(
                     'assets/logo.png',
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Icon(
+                    errorBuilder: (_, _, _) => Icon(
                       LucideIcons.sprout,
                       size: 120,
                       color: AppTheme.primary.withValues(alpha: 0.1),

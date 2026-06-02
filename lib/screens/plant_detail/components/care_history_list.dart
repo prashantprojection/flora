@@ -176,9 +176,10 @@ class CareHistoryList extends StatelessWidget {
           'color': Colors.orange,
         };
       case CareType.skipped:
+      case CareType.snoozed:
         return {
-          'icon': LucideIcons.skipForward,
-          'label': 'Skipped',
+          'icon': LucideIcons.ban,
+          'label': type == CareType.skipped ? 'Skipped' : 'Snoozed',
           'color': Colors.grey,
         };
     }

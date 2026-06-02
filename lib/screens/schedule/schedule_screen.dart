@@ -275,7 +275,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         UpcomingCareTask(
           plantId: plant.id,
           plantName: plant.name,
-          plantImage: plant.imageUrl,
+          plantImage: plant.imagePath,
           type: type,
           dueDate: originalSelectedDate, // Use the visual date
           isCompleted: isCompleted,

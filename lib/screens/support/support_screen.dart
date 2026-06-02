@@ -174,7 +174,7 @@ class _HeroSection extends StatelessWidget {
                 'assets/images/support_flo.png',
                 height: 160,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Icon(
+                errorBuilder: (_, _, _) => Icon(
                   LucideIcons.sprout,
                   size: 80,
                   color: Colors.white.withValues(alpha: 0.3),

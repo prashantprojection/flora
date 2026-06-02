@@ -1,14 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flora/api/api_service.dart';
 import 'package:flora/api/notification_service.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/models/care_event.dart';
-
-final apiServiceProvider = Provider<ApiService>((ref) {
-  return ApiService();
-});
 
 class PlantListNotifier extends Notifier<List<Plant>> {
   @override
@@ -62,12 +57,10 @@ class PlantListNotifier extends Notifier<List<Plant>> {
         lastWatered: event.date,
         nextWatering: nextDate,
       );
-    } else if (event.type == CareType.skipped) {
-      // Logic for skipping: Don't change lastWatered, but push nextWatering to next cycle
-      final frequency = plant.wateringFrequency ?? 7;
-      final nextDate = DateTime.now().add(Duration(days: frequency));
-
-      return updatedPlant.copyWith(nextWatering: nextDate);
+    } else if (event.type == CareType.skipped || event.type == CareType.snoozed) {
+      // Date logic for skipping and snoozing is explicitly handled in 
+      // skipPlant() and snoozePlantWithDuration(). We only append the event here.
+      return updatedPlant;
     } else {
       // Handle other care types (fertilizing, pruning)
       final scheduleIndex = updatedPlant.careSchedules.indexWhere(
@@ -106,7 +99,7 @@ class PlantListNotifier extends Notifier<List<Plant>> {
       plantId,
       CareEvent(
         id: DateTime.now().toString(),
-        type: CareType.skipped,
+        type: CareType.snoozed,
         date: DateTime.now(),
         notes: eventNote,
       ),
