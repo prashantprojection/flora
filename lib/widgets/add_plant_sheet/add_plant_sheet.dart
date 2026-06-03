@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:flora/models/care_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flora/services/image_service.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/plant.dart';
@@ -38,7 +37,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
   final _pruningScheduleController = TextEditingController();
   final _careInstructionsController = TextEditingController();
   DateTime? _selectedDate;
-  File? _selectedImageFile;
+  XFile? _selectedImageFile;
   String? _initialImageUrl;
 
   final ValueNotifier<bool> _isSaveEnabled = ValueNotifier<bool>(false);
@@ -183,7 +182,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
     }
   }
 
-  void _showNonPlantDialog(File file) {
+  void _showNonPlantDialog(XFile file) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

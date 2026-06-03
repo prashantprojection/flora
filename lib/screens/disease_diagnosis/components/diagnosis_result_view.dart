@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:flora/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -194,8 +195,8 @@ class _DiagnosisResultViewState extends ConsumerState<DiagnosisResultView> {
             ],
             flexibleSpace: selectedImage != null
                 ? FlexibleSpaceBar(
-                    background: Image.file(
-                      selectedImage,
+                    background: buildImage(
+                      selectedImage.path,
                       fit: BoxFit.cover,
                       cacheWidth: 800,
                       errorBuilder: (context, error, stackTrace) => Container(
@@ -414,7 +415,7 @@ class _FollowUpInputBar extends StatelessWidget {
   final FocusNode focusNode;
   final bool hasExistingChat;
   final bool isLoading;
-  final File? pendingAttachment;
+  final XFile? pendingAttachment;
   final VoidCallback onPickAttachment;
   final VoidCallback onClearAttachment;
   final VoidCallback onSend;
@@ -498,8 +499,8 @@ class _FollowUpInputBar extends StatelessWidget {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        pendingAttachment!,
+                      child: buildImage(
+                        pendingAttachment!.path,
                         width: 48,
                         height: 48,
                         fit: BoxFit.cover,

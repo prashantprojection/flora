@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'package:flora/utils/app_exception.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flora/models/plant.dart';
@@ -13,12 +14,14 @@ class AddPlantFormState {
   final String? aiReasoning;
   final bool aiSuggestionsApplied;
   final bool isVerifyingImage;
+  final String? error;
 
   const AddPlantFormState({
     this.isGeneratingSuggestions = false,
     this.aiReasoning,
     this.aiSuggestionsApplied = false,
     this.isVerifyingImage = false,
+    this.error,
   });
 
   AddPlantFormState copyWith({
@@ -27,12 +30,15 @@ class AddPlantFormState {
     bool clearAiReasoning = false,
     bool? aiSuggestionsApplied,
     bool? isVerifyingImage,
+    String? error,
+    bool clearError = false,
   }) {
     return AddPlantFormState(
       isGeneratingSuggestions: isGeneratingSuggestions ?? this.isGeneratingSuggestions,
       aiReasoning: clearAiReasoning ? null : (aiReasoning ?? this.aiReasoning),
       aiSuggestionsApplied: aiSuggestionsApplied ?? this.aiSuggestionsApplied,
       isVerifyingImage: isVerifyingImage ?? this.isVerifyingImage,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 }
@@ -81,13 +87,16 @@ class AddPlantFormNotifier extends Notifier<AddPlantFormState> {
       );
 
       return recommendations;
+    } on AppException catch (e) {
+      state = state.copyWith(isGeneratingSuggestions: false, error: e.message);
+      return {'isValid': false};
     } catch (e) {
-      state = state.copyWith(isGeneratingSuggestions: false);
-      throw Exception('Failed to get suggestions: $e');
+      state = state.copyWith(isGeneratingSuggestions: false, error: 'An unexpected error occurred.');
+      return {'isValid': false};
     }
   }
 
-  Future<bool> verifyPlantImage(File file) async {
+  Future<bool> verifyPlantImage(XFile file) async {
     state = state.copyWith(isVerifyingImage: true);
     try {
       final classifier = PlantClassifierService();
@@ -115,7 +124,7 @@ class AddPlantFormNotifier extends Notifier<AddPlantFormState> {
     required PlantStage plantStage,
     required bool hasGrowLight,
     required String weatherLocation,
-    required File? selectedImageFile,
+    required XFile? selectedImageFile,
     required String? initialImageUrl,
   }) async {
     String? imageUrl = initialImageUrl;

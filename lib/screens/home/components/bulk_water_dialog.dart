@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flora/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flora/models/plant.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -42,7 +42,7 @@ class _BulkWaterDialogState extends State<BulkWaterDialog> {
     if (url.startsWith('http')) {
       return NetworkImage(url);
     }
-    return FileImage(File(url));
+    return getImageProvider(url);
   }
 
   @override

@@ -1,9 +1,7 @@
-import 'dart:io';
-
+import 'package:flora/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/services/platform_share_service.dart';
@@ -218,8 +216,7 @@ class PlantDetailScreen extends ConsumerWidget {
         ),
       );
     }
-    return Image.file(
-      File(plant.imagePath!),
+    return buildImage(plant.imagePath!,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => Container(
         color: Colors.grey.shade200,

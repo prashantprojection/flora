@@ -1,7 +1,9 @@
+import 'package:flora/utils/app_exception.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:flora/models/llm_models.dart';
@@ -18,7 +20,7 @@ import 'package:flora/providers/diagnosis_provider.dart';
 // ── State ─────────────────────────────────────────────────────────────────────
 
 class DiagnosisSessionState {
-  final File? selectedImage;
+  final XFile? selectedImage;
 
   /// Full chat history.
   /// Index 0: initial user message (with image bytes — only for the API call).
@@ -38,9 +40,9 @@ class DiagnosisSessionState {
   final DiagnosisData? diagnosisResult;
 
   /// An image the user has picked to attach to their NEXT follow-up message.
-  /// Stored as a File reference — bytes are only read at send time.
+  /// Stored as an XFile reference — bytes are only read at send time.
   /// Cleared immediately after the message is sent.
-  final File? pendingAttachment;
+  final XFile? pendingAttachment;
 
   const DiagnosisSessionState({
     this.selectedImage,
@@ -56,7 +58,7 @@ class DiagnosisSessionState {
   });
 
   DiagnosisSessionState copyWith({
-    File? selectedImage,
+    XFile? selectedImage,
     bool clearSelectedImage = false,
     List<LlmMessage>? chatHistory,
     bool? isLoading,
@@ -71,7 +73,7 @@ class DiagnosisSessionState {
     bool clearDescription = false,
     DiagnosisData? diagnosisResult,
     bool clearDiagnosisResult = false,
-    File? pendingAttachment,
+    XFile? pendingAttachment,
     bool clearPendingAttachment = false,
   }) {
     return DiagnosisSessionState(
@@ -122,11 +124,10 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
     state = state.copyWith(isSpeaking: false, clearError: true);
 
     try {
-      final File? pickedFile =
-          await ImageService.pickImage(fromCamera: fromCamera);
+      final XFile? pickedFile = await ImageService.pickImage(fromCamera: fromCamera);
       if (pickedFile != null) {
         state = state.copyWith(
-          selectedImage: File(pickedFile.path),
+          selectedImage: pickedFile,
           chatHistory: [],
           clearCurrentRecordId: true,
           clearDescription: true,
@@ -143,10 +144,9 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
   /// Does NOT reset the diagnosis session.
   Future<void> pickAttachment() async {
     try {
-      final File? pickedFile =
-          await ImageService.pickImage(fromCamera: false);
+      final XFile? pickedFile = await ImageService.pickImage(fromCamera: false);
       if (pickedFile != null) {
-        state = state.copyWith(pendingAttachment: File(pickedFile.path));
+        state = state.copyWith(pendingAttachment: pickedFile);
       }
     } catch (e) {
       state = state.copyWith(error: 'Error picking image: $e');
@@ -176,9 +176,10 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
   Future<void> viewRecord(DiagnosisRecord record) async {
     // Synchronous — show result immediately
     final diagnosisData = DiagnosisData.fromString(record.diagnosis);
-    final imageFile = File(record.imagePath).existsSync()
-        ? File(record.imagePath)
-        : null;
+    
+    // On web, checking existsSync will crash, so we just blindly create the XFile.
+    // If it's a blob url it will render
+    final imageFile = kIsWeb ? XFile(record.imagePath) : (File(record.imagePath).existsSync() ? XFile(record.imagePath) : null);
 
     state = state.copyWith(
       selectedImage: imageFile,
@@ -318,7 +319,7 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
       state = state.copyWith(
         isLoading: false,
         clearLoadingMessage: true,
-        error: 'Diagnosis failed. Please try again.',
+        error: e is AppException ? e.message : 'Diagnosis failed. Please try again.',
       );
     }
   }
@@ -410,7 +411,7 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
       state = state.copyWith(
         isLoading: false,
         clearLoadingMessage: true,
-        error: 'Failed to get response. Please try again.',
+        error: e is AppException ? e.message : 'Failed to get response. Please try again.',
       );
     }
   }

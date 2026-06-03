@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flora/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -110,8 +110,7 @@ class CareHistoryList extends StatelessWidget {
                                   padding: const EdgeInsets.only(top: 8.0),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
-                                    child: Image.file(
-                                      File(event.photoUrl!),
+                                    child: buildImage(event.photoUrl!,
                                       height: 120,
                                       width: double.infinity,
                                       fit: BoxFit.cover,

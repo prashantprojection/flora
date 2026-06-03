@@ -5,6 +5,7 @@ import 'package:flora/api/llm/llm_engine.dart';
 import 'package:flora/models/llm_models.dart';
 import 'package:flora/api/ai_prompt_templates.dart';
 import 'package:flora/services/genui_orchestrator.dart';
+import 'package:flora/utils/app_exception.dart';
 
 class AiService {
   final LlmEngine _engine;
@@ -43,14 +44,10 @@ class AiService {
       if (text.isNotEmpty) {
         return text.replaceAll(RegExp(r'[*`#]'), '');
       }
-    } catch (e) {
-      debugPrint('[AiService] fetchGeneralCareTips engine failed: $e');
+      throw Exception('Empty response from AI.');
+    } catch (e, stack) {
+      throw ErrorHandler.parse(e, stack);
     }
-
-    return '''Spring: Place in bright indirect light and water moderately.
-Summer: Increase watering frequency and monitor for dry soil.
-Autumn: Reduce watering as growth slows.
-Winter: Keep soil slightly dry and avoid cold drafts.''';
   }
 
   Stream<String> streamGeneralCareTips({
@@ -81,12 +78,8 @@ Winter: Keep soil slightly dry and avoid cold drafts.''';
       await for (final chunk in stream) {
         yield chunk.replaceAll(RegExp(r'[*`#]'), '');
       }
-    } catch (e) {
-      debugPrint('[AiService] streamGeneralCareTips engine failed: $e');
-      yield '''Spring: Place in bright indirect light and water moderately.
-Summer: Increase watering frequency and monitor for dry soil.
-Autumn: Reduce watering as growth slows.
-Winter: Keep soil slightly dry and avoid cold drafts.''';
+    } catch (e, stack) {
+      throw ErrorHandler.parse(e, stack);
     }
   }
 
@@ -105,11 +98,11 @@ Winter: Keep soil slightly dry and avoid cold drafts.''';
 
       final text = response.text ?? '';
       if (text.isNotEmpty) return text;
-    } catch (e) {
-      debugPrint('[AiService] processDiseaseDiagnosisChat engine failed: $e');
+      throw Exception('Empty response from AI.');
+    } catch (e, stack) {
+      throw ErrorHandler.parse(e, stack);
     }
 
-    return "I'm having trouble connecting right now. Please try again.";
   }
 
   /// Follow-up chat call — uses Rolling Summarization.
@@ -212,8 +205,8 @@ Winter: Keep soil slightly dry and avoid cold drafts.''';
           'reasoning': data['reasoning'] ?? '',
         };
       }
-    } catch (e) {
-      debugPrint('[AiService] fetchStructuredCareSchedule engine failed: $e');
+    } catch (e, stack) {
+      throw ErrorHandler.parse(e, stack);
     }
 
     return {

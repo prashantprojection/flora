@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:flora/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -255,7 +256,7 @@ class _UserBubble extends StatelessWidget {
 class _ChatInputBar extends StatelessWidget {
   final TextEditingController controller;
   final bool isLoading;
-  final File? pendingAttachment;
+  final XFile? pendingAttachment;
   final VoidCallback onPickAttachment;
   final VoidCallback onClearAttachment;
   final VoidCallback onSend;
@@ -291,11 +292,12 @@ class _ChatInputBar extends StatelessWidget {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        pendingAttachment!,
+                      child: buildImage(
+                        pendingAttachment!.path,
                         width: 48,
                         height: 48,
                         fit: BoxFit.cover,
+                        cacheWidth: 150,
                       ),
                     ),
                     const SizedBox(width: 8),

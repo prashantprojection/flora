@@ -1,10 +1,11 @@
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flora/models/llm_models.dart';
+import 'package:flora/utils/image_utils.dart';
 
 class ChatMessageBubble extends StatelessWidget {
   final LlmMessage message;
-  final File? selectedImage;
+  final XFile? selectedImage;
   final bool isFirstMessage;
 
   const ChatMessageBubble({
@@ -38,11 +39,12 @@ class ChatMessageBubble extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    selectedImage!,
+                  child: buildImage(
+                    selectedImage!.path,
                     width: 150,
                     height: 150,
                     fit: BoxFit.cover,
+                    cacheWidth: 300,
                   ),
                 ),
               ),

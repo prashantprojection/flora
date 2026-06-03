@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flora/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/care_event.dart';
@@ -105,8 +105,7 @@ class ScheduleTaskCard extends StatelessWidget {
                       ? DecorationImage(
                           image: task.plantImage!.startsWith('http')
                               ? NetworkImage(task.plantImage!)
-                              : FileImage(File(task.plantImage!))
-                                  as ImageProvider,
+                              : getImageProvider(task.plantImage!),
                           fit: BoxFit.cover,
                         )
                       : null,

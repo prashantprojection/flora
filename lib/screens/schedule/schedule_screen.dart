@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flora/services/image_service.dart';
@@ -8,7 +8,6 @@ import 'package:flora/models/care_event.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/providers/plant_provider.dart';
 import 'package:flora/widgets/offline_banner.dart';
-
 import 'package:flora/screens/schedule/components/schedule_task_card.dart';
 import 'package:flora/screens/schedule/components/schedule_calendar_strip.dart';
 import 'package:flora/screens/schedule/components/schedule_empty_state.dart';
@@ -338,7 +337,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     String? photoPath;
 
     if (shouldTakePhoto) {
-      final File? image = await ImageService.pickImage(fromCamera: true);
+      final XFile? image = await ImageService.pickImage(fromCamera: true);
       if (image != null) {
         photoPath = await ImageService.saveImagePermanently(
           image.path,

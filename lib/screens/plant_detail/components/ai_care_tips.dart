@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flora/utils/app_assets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flora/services/ai_service.dart';
 import 'package:flora/models/plant.dart';
@@ -502,19 +503,19 @@ class _SeasonalCarouselState extends State<_SeasonalCarousel> {
 
     switch (season.toLowerCase()) {
       case 'spring':
-        assetName = 'assets/images/spring_banner.png';
+        assetName = AppAssets.springBanner;
         break;
       case 'summer':
-        assetName = 'assets/images/summer_banner.png';
+        assetName = AppAssets.summerBanner;
         break;
       case 'autumn':
-        assetName = 'assets/images/autumn_banner.png';
+        assetName = AppAssets.autumnBanner;
         break;
       case 'winter':
-        assetName = 'assets/images/winter_banner.png';
+        assetName = AppAssets.winterBanner;
         break;
       default:
-        assetName = 'assets/images/spring_banner.png';
+        assetName = AppAssets.springBanner;
     }
 
     return Container(

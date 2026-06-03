@@ -1,3 +1,4 @@
+import 'package:flora/utils/image_utils.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,8 +129,7 @@ class DiagnosisHistorySheet extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(8),
                     child: RepaintBoundary(
                       child: File(record.imagePath).existsSync()
-                          ? Image.file(
-                              File(record.imagePath),
+                          ? buildImage(record.imagePath,
                               width: 60,
                               height: 60,
                               fit: BoxFit.cover,

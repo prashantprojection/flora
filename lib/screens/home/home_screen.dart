@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flora/utils/app_assets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/plant.dart';
@@ -156,11 +157,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  String _getGreeting() {
+  ({String greeting, String mascotPath}) _getGreetingData() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning 🌤';
-    if (hour < 17) return 'Good Afternoon ☀️';
-    return 'Good Evening 🌙';
+    if (hour < 5) return (greeting: 'Good Night 🌙', mascotPath: AppAssets.floNight);
+    if (hour < 12) return (greeting: 'Good Morning 🌤', mascotPath: AppAssets.floMorning);
+    if (hour < 17) return (greeting: 'Good Afternoon ☀️', mascotPath: AppAssets.floAfternoon);
+    if (hour < 22) return (greeting: 'Good Evening 🌙', mascotPath: AppAssets.floEvening);
+    return (greeting: 'Good Night 🌙', mascotPath: AppAssets.floNight);
   }
 
   @override
@@ -168,6 +171,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final allPlants = ref.watch(plantListProvider);
     final theme = Theme.of(context);
     final isLargeScreen = MediaQuery.of(context).size.width > 600;
+    
+    final greetingData = _getGreetingData();
 
     // Pre-compute statuses ONCE per build to avoid O(n²) re-computation.
     final careStatuses = {
@@ -213,7 +218,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Expanded(
                 child: CustomScrollView(
                   slivers: [
-                    HomeHeader(greeting: _getGreeting()),
+                    HomeHeader(
+                      greeting: greetingData.greeting,
+                      mascotPath: greetingData.mascotPath,
+                    ),
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -225,7 +233,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           },
                           decoration: InputDecoration(
                             hintText: 'Search your garden...',
-                            prefixIcon: const Icon(LucideIcons.search),
+                            prefixIcon: Padding(
+                              padding: const EdgeInsets.only(left: 10, right: 4),
+                              child: Image.asset(AppAssets.floAvatar, width: 20, height: 20),
+                            ),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 LucideIcons.slidersHorizontal,

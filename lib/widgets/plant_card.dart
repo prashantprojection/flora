@@ -1,6 +1,4 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flora/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -264,11 +262,7 @@ class PlantCard extends StatelessWidget {
       );
     }
 
-    // Image.file is not supported on web — show placeholder gracefully.
-    if (kIsWeb) return placeholder;
-
-    return Image.file(
-      File(imagePath),
+    return buildImage(imagePath,
       fit: BoxFit.cover,
       cacheWidth: 500,
       errorBuilder: (_, _, _) => placeholder,

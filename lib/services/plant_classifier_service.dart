@@ -37,6 +37,7 @@ class PlantClassifierService {
   /// Analyzes the image at [imagePath] and returns true if it likely contains a plant.
   /// Uses Google ML Kit's on-device Image Labeling.
   Future<bool> isPlant(String imagePath) async {
+    if (kIsWeb) return true; // ML Kit not supported on web. Bypass silently.
     final InputImage inputImage = InputImage.fromFilePath(imagePath);
 
     // Confidence threshold: 0.35 is a good balance.
@@ -80,6 +81,7 @@ class PlantClassifierService {
 
   /// Returns the most confident label if it matches a plant, or null.
   Future<String?> getBestPlantLabel(String imagePath) async {
+    if (kIsWeb) return null; // ML Kit not supported on web.
     final InputImage inputImage = InputImage.fromFilePath(imagePath);
     final ImageLabelerOptions options = ImageLabelerOptions(
       confidenceThreshold: 0.35,

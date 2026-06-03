@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'package:flora/utils/image_utils.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flora/services/image_service.dart';
@@ -51,7 +52,7 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
   }
 
   Future<void> _pickImage() async {
-    final File? image = await ImageService.pickImage(fromCamera: true);
+    final XFile? image = await ImageService.pickImage(fromCamera: true);
     if (image != null) {
       setState(() {
         _photoPath = image.path;
@@ -336,7 +337,7 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
                                   ),
                                   image: _photoPath != null
                                       ? DecorationImage(
-                                          image: FileImage(File(_photoPath!)),
+                                          image: getImageProvider(_photoPath!),
                                           fit: BoxFit.cover,
                                         )
                                       : null,
