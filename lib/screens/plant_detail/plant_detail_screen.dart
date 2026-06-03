@@ -54,10 +54,10 @@ class PlantDetailScreen extends ConsumerWidget {
                   ),
                 ),
                 onPressed: () {
-                  final String speciesStr = plant.species != null && plant.species!.isNotEmpty ? ' (${plant.species})' : '';
-                  final String locationStr = plant.location != null && plant.location!.isNotEmpty ? '\nLocation: ${plant.location}' : '';
+                  final String speciesStr = plant.species?.isNotEmpty == true ? ' (${plant.species})' : '';
+                  final String locationStr = plant.location?.isNotEmpty == true ? '\nLocation: ${plant.location}' : '';
                   final String frequencyStr = plant.wateringFrequency != null ? '\nWatering Schedule: Every ${plant.wateringFrequency} days' : '';
-                  final String instructionsStr = plant.careInstructions != null && plant.careInstructions!.isNotEmpty ? '\n\nCare Instructions:\n${plant.careInstructions}' : '';
+                  final String instructionsStr = plant.careInstructions?.isNotEmpty == true ? '\n\nCare Instructions:\n${plant.careInstructions}' : '';
                   
                   final summary = 'Plant Summary: ${plant.name}$speciesStr$locationStr$frequencyStr$instructionsStr';
                   
@@ -128,7 +128,7 @@ class PlantDetailScreen extends ConsumerWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (plant.species != null && plant.species!.isNotEmpty)
+                        if (plant.species?.isNotEmpty == true)
                           Text(
                             plant.species!,
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -208,7 +208,7 @@ class PlantDetailScreen extends ConsumerWidget {
         child: const Icon(LucideIcons.flower2, size: 80, color: Colors.green),
       );
     }
-    if (plant.imagePath!.startsWith('http')) {
+    if (plant.imagePath?.startsWith('http') == true) {
       return Image.network(
         plant.imagePath!,
         fit: BoxFit.cover,

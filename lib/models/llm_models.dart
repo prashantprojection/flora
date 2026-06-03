@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 /// Represents configuration for an LLM engine to control creativity and limits.
 class LlmConfig {
   final double? temperature;
@@ -23,10 +25,17 @@ enum LlmRole {
 class LlmMessage {
   final LlmRole role;
   final String text;
+  final Uint8List? image;
+  
+  /// A brief background summary of what happened in this conversational turn.
+  /// Used for building lightweight context prompts on follow-up chats.
+  final String? contextSummary;
 
   const LlmMessage({
     required this.role,
     required this.text,
+    this.image,
+    this.contextSummary,
   });
 }
 

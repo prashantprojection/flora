@@ -1,21 +1,16 @@
-import 'dart:typed_data';
+
 import 'package:flora/api/llm/gemini_engine.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flora/models/llm_models.dart';
 
 abstract class LlmEngine {
-  /// Generates a response (text or function call) from a standard prompt
-  Future<LlmResponse> generateResponse(String prompt, {LlmConfig? config});
+  /// Master function capable of handling single-turn text, multi-modal images, 
+  /// and multi-turn chat with or without tools.
+  Future<LlmResponse> generateContent(List<LlmMessage> messages, {LlmConfig? config});
 
-  /// Streams text from a standard prompt for real-time typewriter effect.
+  /// Streaming equivalent for real-time text typewriter effects.
   /// (Streaming currently only supports text, not tool calls).
-  Stream<String> generateTextStream(String prompt, {LlmConfig? config});
-
-  /// Generates a response in a multi-turn chat context.
-  Future<LlmResponse> generateChat(List<LlmMessage> messages, {LlmConfig? config});
-
-  /// Generates a response from an image and an optional prompt
-  Future<LlmResponse> generateResponseFromImage(String prompt, Uint8List image, {LlmConfig? config});
+  Stream<String> generateTextStream(List<LlmMessage> messages, {LlmConfig? config});
 }
 
 final llmEngineProvider = Provider<LlmEngine>((ref) {

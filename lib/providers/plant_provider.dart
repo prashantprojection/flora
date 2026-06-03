@@ -1,11 +1,23 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flora/api/notification_service.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/models/care_event.dart';
+import 'package:flora/repositories/plant/plant_repository.dart';
+import 'package:flora/repositories/plant/local_plant_repository.dart';
+
+// ── Repository Provider ───────────────────────────────────────────────────────
+// To swap to a remote backend: replace LocalPlantRepository() with
+// RemotePlantRepository() — zero other changes needed.
+
+final plantRepositoryProvider = Provider<PlantRepository>((ref) {
+  return LocalPlantRepository();
+});
+
+// ── Plant List Notifier ───────────────────────────────────────────────────────
 
 class PlantListNotifier extends Notifier<List<Plant>> {
+  PlantRepository get _repository => ref.read(plantRepositoryProvider);
+
   @override
   List<Plant> build() {
     _loadPlants();
@@ -13,20 +25,13 @@ class PlantListNotifier extends Notifier<List<Plant>> {
   }
 
   Future<void> _loadPlants() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? plantsJson = prefs.getString('plants');
-    if (plantsJson != null) {
-      final List<dynamic> decodedJson = jsonDecode(plantsJson);
-      state = decodedJson.map((json) => Plant.fromJson(json)).toList();
-    }
+    final plants = await _repository.getPlants();
+    state = plants;
   }
 
   Future<void> _savePlants() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String plantsJson = jsonEncode(
-      state.map((plant) => plant.toJson()).toList(),
-    );
-    await prefs.setString('plants', plantsJson);
+    // Unawaited — UI never blocks on disk writes
+    _repository.savePlants(state);
   }
 
   void addPlant(Plant plant) {
@@ -40,7 +45,8 @@ class PlantListNotifier extends Notifier<List<Plant>> {
         if (plant.id == plantId) _handleCareEvent(plant, event) else plant,
     ];
     _savePlants();
-    final updatedPlant = state.firstWhere((p) => p.id == plantId, orElse: () => state.first);
+    final updatedPlant =
+        state.firstWhere((p) => p.id == plantId, orElse: () => state.first);
     ref.read(notificationServiceProvider).schedulePlantNotification(updatedPlant);
   }
 
@@ -49,23 +55,18 @@ class PlantListNotifier extends Notifier<List<Plant>> {
       careHistory: [...plant.careHistory, event],
     );
     if (event.type == CareType.watering) {
-      // Use the persisted frequency, default to 7 if missing (shouldn't happen with new model)
       final frequency = plant.wateringFrequency ?? 7;
       final nextDate = event.date.add(Duration(days: frequency));
-
       return updatedPlant.copyWith(
         lastWatered: event.date,
         nextWatering: nextDate,
       );
-    } else if (event.type == CareType.skipped || event.type == CareType.snoozed) {
-      // Date logic for skipping and snoozing is explicitly handled in 
-      // skipPlant() and snoozePlantWithDuration(). We only append the event here.
+    } else if (event.type == CareType.skipped ||
+        event.type == CareType.snoozed) {
       return updatedPlant;
     } else {
-      // Handle other care types (fertilizing, pruning)
-      final scheduleIndex = updatedPlant.careSchedules.indexWhere(
-        (s) => s.type == event.type,
-      );
+      final scheduleIndex = updatedPlant.careSchedules
+          .indexWhere((s) => s.type == event.type);
       if (scheduleIndex != -1) {
         final schedule = updatedPlant.careSchedules[scheduleIndex];
         final nextDate = event.date.add(Duration(days: schedule.frequency));
@@ -73,28 +74,32 @@ class PlantListNotifier extends Notifier<List<Plant>> {
           lastDate: event.date,
           nextDate: nextDate,
         );
-
-        final newSchedules = List<CareSchedule>.from(
-          updatedPlant.careSchedules,
-        );
+        final newSchedules = List<CareSchedule>.from(updatedPlant.careSchedules);
         newSchedules[scheduleIndex] = newSchedule;
-
         return updatedPlant.copyWith(careSchedules: newSchedules);
       }
     }
     return updatedPlant;
   }
 
-  void snoozePlantWithDuration(String plantId, {required int days, String? notes, CareType type = CareType.watering}) {
+  void snoozePlantWithDuration(
+    String plantId, {
+    required int days,
+    String? notes,
+    CareType type = CareType.watering,
+  }) {
     state = [
       for (final plant in state)
-        if (plant.id == plantId) _snoozePlantInternal(plant, type, days) else plant,
+        if (plant.id == plantId)
+          _snoozePlantInternal(plant, type, days)
+        else
+          plant,
     ];
-    
-    final String eventNote = (notes != null && notes.isNotEmpty) 
-        ? notes 
+
+    final String eventNote = (notes != null && notes.isNotEmpty)
+        ? notes
         : 'Snoozed ${type.name} for $days day(s)';
-        
+
     addCareEvent(
       plantId,
       CareEvent(
@@ -115,18 +120,18 @@ class PlantListNotifier extends Notifier<List<Plant>> {
     final today = DateTime(now.year, now.month, now.day);
 
     if (type == CareType.watering) {
-      final baseDate = plant.nextWatering.isBefore(today) ? today : plant.nextWatering;
+      final baseDate =
+          plant.nextWatering.isBefore(today) ? today : plant.nextWatering;
       return plant.copyWith(
         nextWatering: baseDate.add(Duration(days: days)),
       );
     } else {
-      // Snooze specific schedule
-      final scheduleIndex = plant.careSchedules.indexWhere(
-        (s) => s.type == type,
-      );
+      final scheduleIndex =
+          plant.careSchedules.indexWhere((s) => s.type == type);
       if (scheduleIndex != -1) {
         final schedule = plant.careSchedules[scheduleIndex];
-        final baseDate = schedule.nextDate.isBefore(today) ? today : schedule.nextDate;
+        final baseDate =
+            schedule.nextDate.isBefore(today) ? today : schedule.nextDate;
         final newSchedule = schedule.copyWith(
           nextDate: baseDate.add(Duration(days: days)),
         );
@@ -147,12 +152,12 @@ class PlantListNotifier extends Notifier<List<Plant>> {
       final nextDate = DateTime.now().add(Duration(days: frequency));
       updatedPlant = plant.copyWith(nextWatering: nextDate);
     } else {
-      final scheduleIndex = plant.careSchedules.indexWhere(
-        (s) => s.type == type,
-      );
+      final scheduleIndex =
+          plant.careSchedules.indexWhere((s) => s.type == type);
       if (scheduleIndex != -1) {
         final schedule = plant.careSchedules[scheduleIndex];
-        final nextDate = DateTime.now().add(Duration(days: schedule.frequency));
+        final nextDate =
+            DateTime.now().add(Duration(days: schedule.frequency));
         final newSchedule = schedule.copyWith(nextDate: nextDate);
         final newSchedules = List<CareSchedule>.from(plant.careSchedules);
         newSchedules[scheduleIndex] = newSchedule;
@@ -160,13 +165,11 @@ class PlantListNotifier extends Notifier<List<Plant>> {
       }
     }
 
-    // Update state directly first (optimistic)
     state = [
       for (final p in state)
         if (p.id == plantId) updatedPlant else p,
     ];
 
-    // Then log the skip event for history
     addCareEvent(
       plantId,
       CareEvent(
@@ -179,10 +182,9 @@ class PlantListNotifier extends Notifier<List<Plant>> {
   }
 
   void updatePlant(Plant updatedPlant) {
-    final plants = state;
-    final index = plants.indexWhere((plant) => plant.id == updatedPlant.id);
+    final index = state.indexWhere((p) => p.id == updatedPlant.id);
     if (index != -1) {
-      final newPlants = List<Plant>.from(plants);
+      final newPlants = List<Plant>.from(state);
       newPlants[index] = updatedPlant;
       state = newPlants;
       _savePlants();
@@ -190,38 +192,36 @@ class PlantListNotifier extends Notifier<List<Plant>> {
   }
 
   void deletePlant(String plantId) {
-    state = state.where((plant) => plant.id != plantId).toList();
+    state = state.where((p) => p.id != plantId).toList();
     _savePlants();
     ref.read(notificationServiceProvider).cancelPlantNotification(plantId);
   }
 
   void importPlants(List<Plant> plants, {required String duplicateStrategy}) {
-    final List<Plant> updatedList = List<Plant>.from(state);
+    // Merge logic is business logic — lives here, not in the repository.
+    final updated = List<Plant>.from(state);
 
     for (final plant in plants) {
-      final existingIndex = updatedList.indexWhere((p) => p.id == plant.id);
-
+      final existingIndex = updated.indexWhere((p) => p.id == plant.id);
       if (existingIndex != -1) {
         if (duplicateStrategy == 'replace') {
-          updatedList[existingIndex] = plant;
+          updated[existingIndex] = plant;
         } else if (duplicateStrategy == 'keep_both') {
           final newId = '${DateTime.now().millisecondsSinceEpoch}_${plant.id}';
-          final renamedPlant = plant.copyWith(
-            id: newId,
-            name: '${plant.name} (Copy)',
-          );
-          updatedList.add(renamedPlant);
+          updated.add(plant.copyWith(id: newId, name: '${plant.name} (Copy)'));
         }
-        // If 'skip', do nothing
+        // 'skip' → do nothing
       } else {
-        updatedList.add(plant);
+        updated.add(plant);
       }
     }
 
-    state = updatedList;
+    state = updated;
     _savePlants();
   }
 }
+
+// ── Derived Providers ─────────────────────────────────────────────────────────
 
 final plantListProvider = NotifierProvider<PlantListNotifier, List<Plant>>(
   PlantListNotifier.new,
@@ -229,20 +229,23 @@ final plantListProvider = NotifierProvider<PlantListNotifier, List<Plant>>(
 
 final activeGardenProvider = Provider<List<Plant>>((ref) {
   final plants = ref.watch(plantListProvider);
-  return plants.where((p) => p.status == PlantStatus.active || p.status == PlantStatus.quarantine || p.status == null).toList();
+  return plants
+      .where((p) =>
+          p.status == PlantStatus.active ||
+          p.status == PlantStatus.quarantine ||
+          p.status == null)
+      .toList();
 });
 
 final locationListProvider = Provider<List<String>>((ref) {
   final plants = ref.watch(plantListProvider);
   final defaultLocations = {'Living Room', 'Bedroom', 'Balcony', 'Garden'};
-
   final plantLocations = plants
       .map((p) => p.location)
       .where((l) => l != null && l.isNotEmpty)
       .cast<String>()
       .toSet();
-
-  final allLocations = {...defaultLocations, ...plantLocations}.toList();
-  allLocations.sort();
+  final allLocations = {...defaultLocations, ...plantLocations}.toList()
+    ..sort();
   return allLocations;
 });

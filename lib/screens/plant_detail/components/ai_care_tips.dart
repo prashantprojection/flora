@@ -65,7 +65,7 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
 
     try {
       final aiService = ref.read(aiServiceProvider);
-      final stream = aiService.generateCareTipsStream(
+      final stream = aiService.streamGeneralCareTips(
         plantName: widget.plant.name,
         species: widget.plant.species,
         plantingDate: DateFormat(

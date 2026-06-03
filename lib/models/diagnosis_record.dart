@@ -7,12 +7,17 @@ class DiagnosisRecord {
   final DateTime date;
   final bool? isHelpful;
 
+  /// JSON-encoded list of [PersistedChatMessage] for follow-up conversation.
+  /// Null means no follow-up was ever started (old records stay compatible).
+  final String? chatMessages;
+
   DiagnosisRecord({
     required this.id,
     required this.imagePath,
     required this.diagnosis,
     required this.date,
     this.isHelpful,
+    this.chatMessages,
   });
 
   DiagnosisRecord copyWith({
@@ -21,6 +26,8 @@ class DiagnosisRecord {
     String? diagnosis,
     DateTime? date,
     bool? isHelpful,
+    String? chatMessages,
+    bool clearChatMessages = false,
   }) {
     return DiagnosisRecord(
       id: id ?? this.id,
@@ -28,9 +35,20 @@ class DiagnosisRecord {
       diagnosis: diagnosis ?? this.diagnosis,
       date: date ?? this.date,
       isHelpful: isHelpful ?? this.isHelpful,
+      chatMessages:
+          clearChatMessages ? null : (chatMessages ?? this.chatMessages),
     );
   }
 }
+
+// ── Hive Adapter ──────────────────────────────────────────────────────────────
+// Field indices:
+//   0 → id
+//   1 → imagePath
+//   2 → diagnosis
+//   3 → date
+//   4 → isHelpful
+//   5 → chatMessages  (NEW — old records read null, backward-compatible)
 
 class DiagnosisRecordAdapter extends TypeAdapter<DiagnosisRecord> {
   @override
@@ -48,13 +66,14 @@ class DiagnosisRecordAdapter extends TypeAdapter<DiagnosisRecord> {
       diagnosis: fields[2] as String,
       date: fields[3] as DateTime,
       isHelpful: fields[4] as bool?,
+      chatMessages: fields[5] as String?, // null for old records — safe
     );
   }
 
   @override
   void write(BinaryWriter writer, DiagnosisRecord obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6) // total fields
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -64,6 +83,8 @@ class DiagnosisRecordAdapter extends TypeAdapter<DiagnosisRecord> {
       ..writeByte(3)
       ..write(obj.date)
       ..writeByte(4)
-      ..write(obj.isHelpful);
+      ..write(obj.isHelpful)
+      ..writeByte(5)
+      ..write(obj.chatMessages);
   }
 }

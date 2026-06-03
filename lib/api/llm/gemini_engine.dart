@@ -92,37 +92,80 @@ class GeminiEngine implements LlmEngine {
   }
 
   LlmResponse _parseResponse(GenerateContentResponse response) {
+    LlmFunctionCall? funcCall;
     if (response.functionCalls.isNotEmpty) {
       final call = response.functionCalls.first;
-      return LlmResponse(
-        functionCall: LlmFunctionCall(
-          name: call.name,
-          arguments: call.args,
-        ),
+      funcCall = LlmFunctionCall(
+        name: call.name,
+        arguments: call.args,
       );
     }
-    return LlmResponse(text: response.text ?? '');
+    
+    // We capture BOTH text and the function call if they exist.
+    // The text will serve as our context summary, while the function call renders the UI.
+    return LlmResponse(
+      text: response.text,
+      functionCall: funcCall,
+    );
+  }
+
+  List<Content> _mapMessagesToGoogleContent(List<LlmMessage> messages) {
+    return messages.map((m) {
+      final role = m.role == LlmRole.user ? 'user' : 'model';
+      final parts = <Part>[TextPart(m.text)];
+      if (m.image != null) {
+        parts.add(DataPart('image/jpeg', m.image!));
+      }
+      return Content(role, parts);
+    }).toList();
   }
 
   @override
-  Future<LlmResponse> generateResponse(String prompt, {LlmConfig? config}) async {
+  Future<LlmResponse> generateContent(List<LlmMessage> messages, {LlmConfig? config}) async {
     try {
       final model = _getModel(config: config);
-      final content = [Content.text(prompt)];
-      final response = await model.generateContent(content);
+      final content = _mapMessagesToGoogleContent(messages);
+
+      if (content.isEmpty) {
+        throw Exception('Cannot generate content with an empty message list.');
+      }
+
+      GenerateContentResponse response;
+      if (content.length == 1) {
+        // Single-turn request
+        response = await model.generateContent(content);
+      } else {
+        // Multi-turn chat
+        final history = content.sublist(0, content.length - 1);
+        final chat = model.startChat(history: history);
+        response = await chat.sendMessage(content.last);
+      }
+
       return _parseResponse(response);
     } catch (e) {
-      debugPrint('[GeminiEngine] generateResponse failed: $e');
-      throw Exception('Gemini generateResponse failed');
+      debugPrint('[GeminiEngine] generateContent failed: $e');
+      throw Exception('Gemini generateContent failed');
     }
   }
 
   @override
-  Stream<String> generateTextStream(String prompt, {LlmConfig? config}) async* {
+  Stream<String> generateTextStream(List<LlmMessage> messages, {LlmConfig? config}) async* {
     try {
       final model = _getModel(config: config);
-      final content = [Content.text(prompt)];
-      final responseStream = model.generateContentStream(content);
+      final content = _mapMessagesToGoogleContent(messages);
+
+      if (content.isEmpty) {
+        throw Exception('Cannot generate stream with an empty message list.');
+      }
+
+      Stream<GenerateContentResponse> responseStream;
+      if (content.length == 1) {
+        responseStream = model.generateContentStream(content);
+      } else {
+        final history = content.sublist(0, content.length - 1);
+        final chat = model.startChat(history: history);
+        responseStream = chat.sendMessageStream(content.last);
+      }
       
       await for (final chunk in responseStream) {
         if (chunk.text != null && chunk.text!.isNotEmpty) {
@@ -132,42 +175,6 @@ class GeminiEngine implements LlmEngine {
     } catch (e) {
       debugPrint('[GeminiEngine] generateTextStream failed: $e');
       throw Exception('Gemini generateTextStream failed');
-    }
-  }
-
-  @override
-  Future<LlmResponse> generateChat(List<LlmMessage> messages, {LlmConfig? config}) async {
-    try {
-      final model = _getModel(config: config);
-      
-      // Convert our generic LlmMessage to Google's Content format
-      final history = messages.map((m) {
-        final role = m.role == LlmRole.user ? 'user' : 'model';
-        return Content(role, [TextPart(m.text)]);
-      }).toList();
-
-      // We send the last message as the new prompt and the rest as history
-      final chat = model.startChat(history: history.sublist(0, history.length - 1));
-      final response = await chat.sendMessage(history.last);
-      return _parseResponse(response);
-    } catch (e) {
-      debugPrint('[GeminiEngine] generateChat failed: $e');
-      throw Exception('Gemini generateChat failed');
-    }
-  }
-
-  @override
-  Future<LlmResponse> generateResponseFromImage(String prompt, Uint8List image, {LlmConfig? config}) async {
-    try {
-      final model = _getModel(config: config);
-      final content = [
-        Content.multi([TextPart(prompt), DataPart('image/jpeg', image)]),
-      ];
-      final response = await model.generateContent(content);
-      return _parseResponse(response);
-    } catch (e) {
-      debugPrint('[GeminiEngine] generateResponseFromImage failed: $e');
-      throw Exception('Gemini generateResponseFromImage failed');
     }
   }
 }
