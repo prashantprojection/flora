@@ -1,5 +1,6 @@
 import 'package:flora/utils/app_assets.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/utils/app_theme.dart';
@@ -56,7 +57,10 @@ class _SupportScreenState extends State<SupportScreen> {
         slivers: [
           // ── Hero Section ──────────────────────────────────────────
           SliverToBoxAdapter(
-            child: _HeroSection(),
+            child: GestureDetector(
+              onLongPress: () => context.push('/settings'),
+              child: _HeroSection(),
+            ),
           ),
 
           // ── Content ───────────────────────────────────────────────
@@ -165,6 +169,12 @@ class _HeroSection extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w600,
                     ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    LucideIcons.lock,
+                    size: 14,
+                    color: Colors.white.withValues(alpha: 0.15),
                   ),
                 ],
               ),

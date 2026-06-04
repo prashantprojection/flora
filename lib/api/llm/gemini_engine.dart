@@ -5,14 +5,17 @@ import 'package:flora/api/llm/llm_engine.dart';
 import 'package:flora/models/llm_models.dart';
 
 class GeminiEngine implements LlmEngine {
-  late final String _apiKey;
+  final String _apiKey;
+  final String _modelId;
 
-  GeminiEngine() {
-    final key = dotenv.env['GEMINI_API_KEY'];
-    if (key == null) {
-      throw Exception('GEMINI_API_KEY not found in .env file.');
+  GeminiEngine({String? apiKey, String? modelId})
+      : _apiKey = (apiKey?.isNotEmpty == true)
+            ? apiKey!
+            : (dotenv.env['GEMINI_API_KEY'] ?? ''),
+        _modelId = modelId ?? 'gemini-2.5-flash' {
+    if (_apiKey.isEmpty) {
+      throw Exception('No Gemini API key provided and no fallback found in .env file.');
     }
-    _apiKey = key;
   }
 
   // ── Schema Mapper ─────────────────────────────────────────────────────────
@@ -80,7 +83,7 @@ class GeminiEngine implements LlmEngine {
     }
 
     return GenerativeModel(
-      model: 'gemini-2.5-flash',
+      model: _modelId,
       apiKey: _apiKey,
       tools: googleTools,
       generationConfig: GenerationConfig(

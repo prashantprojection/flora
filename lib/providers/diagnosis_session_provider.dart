@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flora/utils/app_exception.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -113,6 +114,8 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
   static const int _maxFollowUpPairs = 50; // 100 messages max after initial 2
 
   final PlantClassifierService _classifierService = PlantClassifierService();
+  Timer? _chatSaveTimer;
+  bool _ttsInitialized = false;
 
   @override
   DiagnosisSessionState build() => const DiagnosisSessionState();
@@ -326,9 +329,20 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
 
   Future<void> _saveToHistory(String aiResponse) async {
     final recordId = const Uuid().v4();
+    final permanentPath = await ImageService.saveImagePermanently(
+      state.selectedImage!.path,
+      prefix: 'diag',
+    );
+
+    // Update state to use permanent path to prevent broken image references during the active session
+    state = state.copyWith(
+      selectedImage: XFile(permanentPath),
+      clearSelectedImage: false,
+    );
+
     final record = DiagnosisRecord(
       id: recordId,
-      imagePath: state.selectedImage!.path,
+      imagePath: permanentPath,
       diagnosis: aiResponse,
       date: DateTime.now(),
     );
@@ -457,10 +471,13 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
 
     final chatJson = PersistedChatMessage.encodeList(persisted);
 
-    // Fire and forget — no await, no UI block
-    ref
-        .read(diagnosisHistoryProvider.notifier)
-        .updateChatMessages(recordId, chatJson);
+    _chatSaveTimer?.cancel();
+    _chatSaveTimer = Timer(const Duration(milliseconds: 500), () {
+      // Fire and forget after debounce — no await, no UI block
+      ref
+          .read(diagnosisHistoryProvider.notifier)
+          .updateChatMessages(recordId, chatJson);
+    });
   }
 
   // ── TTS ───────────────────────────────────────────────────────────────────
@@ -476,12 +493,15 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
       state = state.copyWith(isSpeaking: true);
       await ttsService.stop();
 
-      await ttsService.init((isSpeaking) {
-        // Guard against state updates after reset
-        if (state.currentRecordId != null || state.diagnosisResult != null) {
-          state = state.copyWith(isSpeaking: isSpeaking);
-        }
-      });
+      if (!_ttsInitialized) {
+        await ttsService.init((isSpeaking) {
+          // Guard against state updates after reset
+          if (state.currentRecordId != null || state.diagnosisResult != null) {
+            state = state.copyWith(isSpeaking: isSpeaking);
+          }
+        });
+        _ttsInitialized = true;
+      }
 
       final lastMsg = state.chatHistory.lastWhere(
         (m) => m.role == LlmRole.model,
