@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'package:flora/api/notification_service.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/models/care_event.dart';
@@ -29,9 +31,14 @@ class PlantListNotifier extends Notifier<List<Plant>> {
     state = plants;
   }
 
-  Future<void> _savePlants() async {
-    // Unawaited — UI never blocks on disk writes
-    _repository.savePlants(state);
+  Timer? _saveTimer;
+
+  void _savePlants() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 500), () {
+      // Unawaited — UI never blocks on disk writes, but we debounce to prevent race conditions
+      _repository.savePlants(state);
+    });
   }
 
   void addPlant(Plant plant) {
@@ -103,7 +110,7 @@ class PlantListNotifier extends Notifier<List<Plant>> {
     addCareEvent(
       plantId,
       CareEvent(
-        id: DateTime.now().toString(),
+        id: const Uuid().v4(),
         type: CareType.snoozed,
         date: DateTime.now(),
         notes: eventNote,
@@ -173,7 +180,7 @@ class PlantListNotifier extends Notifier<List<Plant>> {
     addCareEvent(
       plantId,
       CareEvent(
-        id: DateTime.now().toString(),
+        id: const Uuid().v4(),
         type: CareType.skipped,
         date: DateTime.now(),
         notes: 'Skipped ${type.name} task',

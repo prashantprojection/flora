@@ -2,6 +2,7 @@
 import 'package:flora/api/llm/gemini_engine.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flora/models/llm_models.dart';
+import 'package:flora/providers/ai_settings_provider.dart';
 
 abstract class LlmEngine {
   /// Master function capable of handling single-turn text, multi-modal images, 
@@ -14,6 +15,11 @@ abstract class LlmEngine {
 }
 
 final llmEngineProvider = Provider<LlmEngine>((ref) {
-  // Can be easily swapped to GemmaEngine() if needed for offline support.
-  return GeminiEngine();
+  final settings = ref.watch(aiSettingsProvider);
+  // In the future, this can switch between GeminiEngine, OpenAiEngine, etc.
+  // based on settings.activeProvider
+  return GeminiEngine(
+    apiKey: settings.geminiApiKey,
+    modelId: settings.geminiModelId,
+  );
 });

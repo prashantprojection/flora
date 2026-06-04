@@ -6,6 +6,7 @@ import 'package:flora/screens/schedule/schedule_screen.dart';
 import 'package:flora/screens/disease_diagnosis/disease_diagnosis_screen.dart';
 import 'package:flora/screens/support/support_screen.dart';
 import 'package:flora/screens/onboarding/onboarding_screen.dart';
+import 'package:flora/screens/settings/settings_screen.dart';
 import 'package:flora/services/preferences_service.dart';
 import 'package:flora/widgets/scaffold_with_nav_bar.dart';
 
@@ -26,6 +27,10 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/onboarding',
       builder: (context, state) => const OnboardingScreen(),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsScreen(),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
