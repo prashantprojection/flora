@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:flora/utils/app_assets.dart';
 
 class ScheduleEmptyState extends StatelessWidget {
   final bool isToday;
@@ -19,9 +20,9 @@ class ScheduleEmptyState extends StatelessWidget {
             SizedBox(
               height: 180,
               child: Image.asset(
-                'assets/images/flo_schedule_complete.png',
+                AppAssets.floScheduleComplete,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHighest.withValues(

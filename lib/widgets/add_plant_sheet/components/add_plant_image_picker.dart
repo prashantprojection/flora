@@ -1,9 +1,10 @@
-import 'dart:io';
+import 'package:flora/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddPlantImagePicker extends StatelessWidget {
-  final File? selectedImageFile;
+  final XFile? selectedImageFile;
   final String? initialImageUrl;
   final VoidCallback onPickImage;
   final VoidCallback onTakePhoto;
@@ -40,10 +41,10 @@ class AddPlantImagePicker extends StatelessWidget {
               image: hasImage
                   ? DecorationImage(
                       image: selectedImageFile != null
-                          ? FileImage(selectedImageFile!)
+                          ? getImageProvider(selectedImageFile!.path)
                           : (initialImageUrl!.startsWith('http')
                               ? NetworkImage(initialImageUrl!)
-                              : FileImage(File(initialImageUrl!))) as ImageProvider,
+                              : getImageProvider(initialImageUrl!)),
                       fit: BoxFit.cover,
                     )
                   : null,

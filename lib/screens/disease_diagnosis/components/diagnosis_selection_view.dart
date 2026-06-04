@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flora/utils/app_assets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flora/providers/diagnosis_provider.dart';
@@ -75,7 +76,7 @@ class DiagnosisSelectionView extends ConsumerWidget {
                         gradient: RadialGradient(colors: [theme.colorScheme.primary.withValues(alpha: 0.2), Colors.transparent], radius: 0.8),
                       ),
                     ),
-                    Image.asset('assets/images/flo_doctor.png', height: 160, fit: BoxFit.contain),
+                    Image.asset(AppAssets.floDoctor, height: 160, fit: BoxFit.contain),
                   ],
                 ),
               ),

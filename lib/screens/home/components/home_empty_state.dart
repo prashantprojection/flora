@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flora/utils/app_assets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/utils/app_theme.dart';
 import 'package:flora/widgets/add_plant_sheet/add_plant_sheet.dart';
@@ -23,10 +24,10 @@ class HomeEmptyState extends StatelessWidget {
                 height: 120,
                 width: 120,
                 child: Image.asset(
-                  'assets/images/empty_pot.png',
-                  // 'assets/images/empty_garden.png',
+                  AppAssets.emptyPot,
+                  // AppAssets.emptyGarden,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primaryContainer

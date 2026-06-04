@@ -1,6 +1,4 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flora/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -43,7 +41,7 @@ class PlantCard extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     // Plant photo / placeholder
-                    _buildImage(context, plant.imageUrl),
+                    _buildImage(context, plant.imagePath),
 
                     // Gradient scrim at bottom of image for readability
                     Positioned(
@@ -227,7 +225,7 @@ class PlantCard extends StatelessWidget {
     );
   }
 
-  Widget _buildImage(BuildContext context, String? imageUrl) {
+  Widget _buildImage(BuildContext context, String? imagePath) {
     final theme = Theme.of(context);
     final placeholder = Container(
       color: AppTheme.muted,
@@ -253,25 +251,21 @@ class PlantCard extends StatelessWidget {
       ),
     );
 
-    if (imageUrl == null) return placeholder;
+    if (imagePath == null) return placeholder;
 
-    if (imageUrl.startsWith('http')) {
+    if (imagePath.startsWith('http')) {
       return Image.network(
-        imageUrl,
+        imagePath,
         fit: BoxFit.cover,
         cacheWidth: 500,
-        errorBuilder: (_, __, ___) => placeholder,
+        errorBuilder: (_, _, _) => placeholder,
       );
     }
 
-    // Image.file is not supported on web — show placeholder gracefully.
-    if (kIsWeb) return placeholder;
-
-    return Image.file(
-      File(imageUrl),
+    return buildImage(imagePath,
       fit: BoxFit.cover,
       cacheWidth: 500,
-      errorBuilder: (_, __, ___) => placeholder,
+      errorBuilder: (_, _, _) => placeholder,
     );
   }
 

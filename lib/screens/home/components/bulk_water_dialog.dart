@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flora/utils/image_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flora/models/plant.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -42,7 +42,7 @@ class _BulkWaterDialogState extends State<BulkWaterDialog> {
     if (url.startsWith('http')) {
       return NetworkImage(url);
     }
-    return FileImage(File(url));
+    return getImageProvider(url);
   }
 
   @override
@@ -84,8 +84,8 @@ class _BulkWaterDialogState extends State<BulkWaterDialog> {
                         ? Text(plant.species!)
                         : null,
                     secondary: CircleAvatar(
-                      backgroundImage: _getImageProvider(plant.imageUrl),
-                      child: _getImageProvider(plant.imageUrl) == null
+                      backgroundImage: _getImageProvider(plant.imagePath),
+                      child: _getImageProvider(plant.imagePath) == null
                           ? const Icon(LucideIcons.flower2)
                           : null,
                     ),

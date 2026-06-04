@@ -494,7 +494,7 @@ class _AddPlantFormState extends State<AddPlantForm> {
                   ),
                 ],
                 
-                if (widget.aiReasoning != null && widget.aiReasoning!.isNotEmpty) ...[
+                if (widget.aiReasoning?.isNotEmpty == true) ...[
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(20),

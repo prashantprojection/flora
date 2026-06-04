@@ -1,11 +1,12 @@
-import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/widgets/animated_press.dart';
+import 'package:flora/utils/image_utils.dart';
+import 'package:image_picker/image_picker.dart';
 
 class DiagnosisPreviewView extends StatelessWidget {
-  final File selectedImage;
+  final XFile selectedImage;
   final String? initialDescription;
   final ValueChanged<String> onDescriptionChanged;
   final VoidCallback onStartDiagnosis;
@@ -66,8 +67,8 @@ class DiagnosisPreviewView extends StatelessWidget {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
-                    child: Image.file(
-                      selectedImage,
+                    child: buildImage(
+                      selectedImage.path,
                       height: 340,
                       width: double.infinity,
                       fit: BoxFit.cover,

@@ -1,3 +1,4 @@
+import 'package:flora/utils/app_assets.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -171,10 +172,10 @@ class _HeroSection extends StatelessWidget {
 
               // Mascot
               Image.asset(
-                'assets/images/support_flo.png',
+                AppAssets.supportFlo,
                 height: 160,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Icon(
+                errorBuilder: (_, _, _) => Icon(
                   LucideIcons.sprout,
                   size: 80,
                   color: Colors.white.withValues(alpha: 0.3),

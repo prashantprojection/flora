@@ -4,7 +4,7 @@ class Plant {
   final String id;
   final String name;
   final String? species;
-  final String? imageUrl;
+  final String? imagePath;
   final DateTime plantingDate;
   final String? location;
   final DateTime lastWatered;
@@ -30,7 +30,7 @@ class Plant {
     required this.id,
     required this.name,
     this.species,
-    this.imageUrl,
+    this.imagePath,
     required this.plantingDate,
     this.location,
     required this.lastWatered,
@@ -52,7 +52,7 @@ class Plant {
     String? id,
     String? name,
     String? species,
-    String? imageUrl,
+    String? imagePath,
     DateTime? plantingDate,
     String? location,
     DateTime? lastWatered,
@@ -77,7 +77,7 @@ class Plant {
       id: id ?? this.id,
       name: name ?? this.name,
       species: species ?? this.species,
-      imageUrl: imageUrl ?? this.imageUrl,
+      imagePath: imagePath ?? this.imagePath,
       plantingDate: plantingDate ?? this.plantingDate,
       location: location ?? this.location,
       lastWatered: lastWatered ?? this.lastWatered,
@@ -109,8 +109,8 @@ class Plant {
         final last = DateTime.parse(json['lastWatered']);
         final next = DateTime.parse(json['nextWatering']);
         final diff = next.difference(last).inDays;
-        if (diff > 0) {
-          inferredFrequency = diff;
+        if (diff >= 0) {
+          inferredFrequency = diff == 0 ? 1 : diff;
         }
       } catch (_) {}
     }
@@ -119,7 +119,7 @@ class Plant {
       id: json['id'],
       name: json['name'],
       species: json['species'],
-      imageUrl: json['imageUrl'],
+      imagePath: json['imagePath'],
       plantingDate: DateTime.parse(json['plantingDate']),
       location: json['location'],
       lastWatered: DateTime.parse(json['lastWatered']),
@@ -162,7 +162,7 @@ class Plant {
       'id': id,
       'name': name,
       'species': species,
-      'imageUrl': imageUrl,
+      'imagePath': imagePath,
       'plantingDate': plantingDate.toIso8601String(),
       'location': location,
       'lastWatered': lastWatered.toIso8601String(),

@@ -1,7 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flora/utils/app_assets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/services/preferences_service.dart';
+
+class OnboardingSlideData {
+  final String title;
+  final String subtitle;
+  final String image;
+  final Color color;
+  final bool isDark;
+
+  const OnboardingSlideData({
+    required this.title,
+    required this.subtitle,
+    required this.image,
+    required this.color,
+    required this.isDark,
+  });
+}
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -14,35 +31,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<Map<String, dynamic>> _slides = [
-    {
-      'title': 'Welcome to Flora',
-      'subtitle': 'Meet Flo, your personal plant care companion.',
-      'image': 'assets/images/onboarding/slide_1.png',
-      'color': const Color(0xFFE8F5E2),
-      'isDark': false,
-    },
-    {
-      'title': 'Everything you need',
-      'subtitle': 'AI Care Schedules, Light Meters, and Disease Diagnosis — all without subscriptions or paywalls.',
-      'image': 'assets/images/onboarding/slide_2.png',
-      'color': const Color(0xFFFFFBEA),
-      'isDark': false,
-    },
-    {
-      'title': 'Flo AI care',
-      'subtitle': 'Flo AI creates personalised care schedules tailored to your plant and local climate.',
-      'image': 'assets/images/onboarding/slide_3.png',
-      'color': const Color(0xFFEAF4FF),
-      'isDark': false,
-    },
-    {
-      'title': 'Your data stays with you',
-      'subtitle': 'Plants and photos are stored locally. No accounts, no cloud uploads.',
-      'image': 'assets/images/onboarding/slide_4.png',
-      'color': const Color(0xFF2E4A3A),
-      'isDark': true,
-    }
+  final List<OnboardingSlideData> _slides = [
+    OnboardingSlideData(
+      title: 'Welcome to Flora',
+      subtitle: 'Meet Flo, your personal plant care companion.',
+      image: AppAssets.onboardingSlide1,
+      color: const Color(0xFFE8F5E2),
+      isDark: false,
+    ),
+    OnboardingSlideData(
+      title: 'Everything you need',
+      subtitle: 'AI Care Schedules, Light Meters, and Disease Diagnosis — all without subscriptions or paywalls.',
+      image: AppAssets.onboardingSlide2,
+      color: const Color(0xFFFFFBEA),
+      isDark: false,
+    ),
+    OnboardingSlideData(
+      title: 'Flo AI care',
+      subtitle: 'Flo AI creates personalised care schedules tailored to your plant and local climate.',
+      image: AppAssets.onboardingSlide3,
+      color: const Color(0xFFEAF4FF),
+      isDark: false,
+    ),
+    OnboardingSlideData(
+      title: 'Your data stays with you',
+      subtitle: 'Plants and photos are stored locally. No accounts, no cloud uploads.',
+      image: AppAssets.onboardingSlide4,
+      color: const Color(0xFF2E4A3A),
+      isDark: true,
+    )
   ];
 
   @override
@@ -73,12 +90,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final currentSlide = _slides[_currentPage];
-    final isDark = currentSlide['isDark'] as bool;
+    final isDark = currentSlide.isDark;
     final subtitleColor = isDark ? Colors.white70 : theme.colorScheme.onSurfaceVariant;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 500),
-      color: currentSlide['color'] as Color,
+      color: currentSlide.color,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
@@ -106,11 +123,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     });
                   },
                   itemCount: _slides.length,
-                  itemBuilder: (context, index) {
-                    final slide = _slides[index];
-                    final slideIsDark = slide['isDark'] as bool;
-                    final slideTextColor = slideIsDark ? Colors.white : theme.colorScheme.onSurface;
-                    final slideSubtitleColor = slideIsDark ? Colors.white70 : theme.colorScheme.onSurfaceVariant;
+                    itemBuilder: (context, index) {
+                      final slide = _slides[index];
+                      final slideIsDark = slide.isDark;
+                      final slideTextColor = slideIsDark ? Colors.white : theme.colorScheme.onSurface;
+                      final slideSubtitleColor = slideIsDark ? Colors.white70 : theme.colorScheme.onSurfaceVariant;
                     
                     return Padding(
                       padding: const EdgeInsets.all(24.0),
@@ -122,7 +139,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               child: AspectRatio(
                                 aspectRatio: 1, // To keep the square vector art
                                 child: Image.asset(
-                                  slide['image'] as String,
+                                  slide.image,
                                   fit: BoxFit.contain,
                                 ),
                               ),
@@ -130,7 +147,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                           const SizedBox(height: 48),
                           Text(
-                            slide['title'] as String,
+                            slide.title,
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: slideTextColor,
@@ -139,7 +156,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            slide['subtitle'] as String,
+                            slide.subtitle,
                             style: theme.textTheme.bodyLarge?.copyWith(
                               color: slideSubtitleColor,
                               height: 1.5,

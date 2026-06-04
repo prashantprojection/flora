@@ -1,15 +1,14 @@
-import 'dart:io';
-
 import 'package:flora/models/care_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flora/services/image_service.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/plant.dart';
-import 'package:flora/providers/plant_provider.dart';
+
 import 'package:flora/utils/app_theme.dart';
-import 'package:flora/api/gemini_service.dart';
+
 import 'package:flora/services/plant_classifier_service.dart';
 import 'package:flora/providers/connectivity_provider.dart';
 import 'package:flora/services/preferences_service.dart';
@@ -17,6 +16,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:flora/widgets/add_plant_sheet/components/add_plant_image_picker.dart';
 import 'package:flora/widgets/add_plant_sheet/components/add_plant_form.dart';
+import 'package:flora/providers/add_plant_form_provider.dart';
 
 class AddPlantSheet extends ConsumerStatefulWidget {
   final Plant? plant; // Optional plant for editing
@@ -37,11 +37,10 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
   final _pruningScheduleController = TextEditingController();
   final _careInstructionsController = TextEditingController();
   DateTime? _selectedDate;
-  File? _selectedImageFile;
+  XFile? _selectedImageFile;
   String? _initialImageUrl;
 
-  bool _isSaveEnabled = false;
-  bool _isGeneratingSuggestions = false;
+  final ValueNotifier<bool> _isSaveEnabled = ValueNotifier<bool>(false);
   bool _isOtherSelected = false;
 
   bool _hasGrowLight = false;
@@ -49,10 +48,6 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
   PlantStatus _plantStatus = PlantStatus.active;
   final _weatherLocationController = TextEditingController();
 
-  // AI reasoning state
-  String? _aiReasoning;
-  // Track whether AI suggestions have been applied
-  bool _aiSuggestionsApplied = false;
   // One-time tooltip
   bool _showAiTooltip = false;
 
@@ -87,7 +82,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
         _pruningScheduleController.text = pruning.frequency.toString();
       }
 
-      _initialImageUrl = widget.plant!.imageUrl;
+      _initialImageUrl = widget.plant!.imagePath;
       if (widget.plant!.careInstructions != null) {
         _careInstructionsController.text = widget.plant!.careInstructions!;
       }
@@ -129,23 +124,23 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
     _pruningScheduleController.dispose();
     _careInstructionsController.dispose();
     _weatherLocationController.dispose();
+    _isSaveEnabled.dispose();
     super.dispose();
   }
 
   void _validateForm() {
     final bool isValid =
-        _nameController.text.isNotEmpty &&
+        _nameController.text.trim().isNotEmpty &&
         _dateController.text.isNotEmpty &&
         (_selectedImageFile != null || _initialImageUrl != null) &&
         (int.tryParse(_wateringScheduleController.text) ?? 0) > 0;
-    setState(() {
-      _isSaveEnabled = isValid;
-    });
+    _isSaveEnabled.value = isValid;
   }
 
   Future<void> _pickImage() async {
     final pickedFile = await ImageService.pickImage(fromCamera: false);
     if (pickedFile != null) {
+      if (!mounted) return;
       setState(() {
         _selectedImageFile = pickedFile;
         _initialImageUrl = null;
@@ -187,7 +182,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
     }
   }
 
-  void _showNonPlantDialog(File file) {
+  void _showNonPlantDialog(XFile file) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -225,7 +220,8 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
       builder: (BuildContext context, Widget? child) {
-        return Theme(data: AppTheme.lightTheme, child: child!);
+        if (child == null) return const SizedBox.shrink();
+        return Theme(data: AppTheme.lightTheme, child: child);
       },
     );
     if (picked != null && picked != _selectedDate) {
@@ -245,7 +241,6 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
       return;
     }
 
-    // Location is required for climate-aware suggestions
     if (_locationController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -255,18 +250,11 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
       return;
     }
 
-    // Dismiss the one-time tooltip when first used
     if (_showAiTooltip) _dismissAiTooltip();
 
-    setState(() {
-      _isGeneratingSuggestions = true;
-      _aiReasoning = null;
-      _aiSuggestionsApplied = false;
-    });
-
     try {
-      final geminiService = ref.read(geminiServiceProvider);
-      final recommendations = await geminiService.getPlantCareRecommendations(
+      final notifier = ref.read(addPlantFormProvider.notifier);
+      final recommendations = await notifier.getAiSuggestions(
         plantName: _nameController.text,
         species: _speciesController.text,
         location: _locationController.text,
@@ -275,35 +263,26 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
         weatherLocation: _weatherLocationController.text,
       );
 
-      if (mounted) {
-        if (recommendations['isValid'] == false) {
-          setState(() {
-            _isGeneratingSuggestions = false;
-          });
-          _showInvalidPlantDialog(_nameController.text);
-          return;
-        }
+      if (!mounted) return;
 
+      if (recommendations?['isValid'] == false) {
+        _showInvalidPlantDialog(_nameController.text);
+        return;
+      }
+
+      if (recommendations != null) {
         setState(() {
-          _wateringScheduleController.text =
-              recommendations['wateringFrequency'].toString();
-              
-          final int fert = recommendations['fertilizingFrequency'] ?? 0;
-          if (fert > 0) {
-            _fertilizingScheduleController.text = fert.toString();
-          }
+          _wateringScheduleController.text = recommendations['wateringFrequency']?.toString() ?? '';
           
-          final int prune = recommendations['pruningFrequency'] ?? 0;
-          if (prune > 0) {
-            _pruningScheduleController.text = prune.toString();
-          }
+          final rawFert = recommendations['fertilizingFrequency'];
+          final int fert = rawFert is int ? rawFert : (int.tryParse(rawFert?.toString() ?? '') ?? 0);
+          if (fert > 0) _fertilizingScheduleController.text = fert.toString();
+          
+          final rawPrune = recommendations['pruningFrequency'];
+          final int prune = rawPrune is int ? rawPrune : (int.tryParse(rawPrune?.toString() ?? '') ?? 0);
+          if (prune > 0) _pruningScheduleController.text = prune.toString();
           
           _careInstructionsController.text = recommendations['advice'] ?? '';
-          // Store AI reasoning
-          final rawReasoning = recommendations['reasoning'] as String? ?? '';
-          _aiReasoning = rawReasoning.isNotEmpty ? rawReasoning : null;
-          // Mark that suggestions were AI-applied
-          _aiSuggestionsApplied = true;
         });
         _validateForm();
       }
@@ -312,12 +291,6 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to get suggestions: $e')),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGeneratingSuggestions = false;
-        });
       }
     }
   }
@@ -341,83 +314,27 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
   }
 
   Future<void> _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      final String id = widget.plant?.id ?? const Uuid().v4();
-      
-      String? imageUrl = _initialImageUrl;
-      if (_selectedImageFile != null) {
-        imageUrl = await ImageService.saveImagePermanently(
-          _selectedImageFile!.path,
-          prefix: 'plant',
-        );
-      }
-
-      final int wateringDays = int.parse(_wateringScheduleController.text);
-      final DateTime lastWatered = widget.plant?.lastWatered ?? _selectedDate!;
-
-      // Handle additional schedules
-      final List<CareSchedule> schedules = [];
-
-      void addSchedule(TextEditingController controller, CareType type) {
-        if (controller.text.isNotEmpty) {
-          final int? days = int.tryParse(controller.text);
-          if (days != null && days > 0) {
-            final existing = widget.plant?.careSchedules
-                .where((s) => s.type == type)
-                .firstOrNull;
-            final lastDate = existing?.lastDate ?? _selectedDate!;
-            final nextDate = lastDate.add(Duration(days: days));
-            schedules.add(
-              CareSchedule(
-                type: type,
-                frequency: days,
-                lastDate: lastDate,
-                nextDate: nextDate,
-              ),
-            );
-          }
-        }
-      }
-
-      addSchedule(_fertilizingScheduleController, CareType.fertilizing);
-      addSchedule(_pruningScheduleController, CareType.pruning);
-
-      final Plant plant = Plant(
-        id: id,
-        name: _nameController.text,
-        species: _speciesController.text.isEmpty
-            ? null
-            : _speciesController.text,
-        imageUrl: imageUrl,
-        plantingDate: _selectedDate!,
-        location: _locationController.text,
-        lastWatered: lastWatered,
-        nextWatering: lastWatered.add(Duration(days: wateringDays)),
-        wateringFrequency: wateringDays,
-        careInstructions: _careInstructionsController.text.isEmpty
-            ? null
-            : _careInstructionsController.text,
-        careHistory: widget.plant?.careHistory ?? [],
-        careSchedules: schedules,
-        status: _plantStatus,
-        stage: _plantStage,
+    if (_formKey.currentState?.validate() ?? false) {
+      final notifier = ref.read(addPlantFormProvider.notifier);
+      await notifier.submitForm(
+        existingPlant: widget.plant,
+        id: widget.plant?.id ?? const Uuid().v4(),
+        name: _nameController.text.trim(),
+        species: _speciesController.text.trim(),
+        location: _locationController.text.trim(),
+        selectedDate: _selectedDate!,
+        wateringDays: int.tryParse(_wateringScheduleController.text) ?? 0,
+        fertilizingDays: int.tryParse(_fertilizingScheduleController.text),
+        pruningDays: int.tryParse(_pruningScheduleController.text),
+        careInstructions: _careInstructionsController.text,
+        plantStatus: _plantStatus,
+        plantStage: _plantStage,
         hasGrowLight: _hasGrowLight,
-        weatherLocation: _weatherLocationController.text.isEmpty ? null : _weatherLocationController.text,
-        // Persist AI reasoning if suggestions were applied
-        aiReasoning: _aiSuggestionsApplied ? _aiReasoning : widget.plant?.aiReasoning,
-        // Store location source
-        aiTipsSource: _aiSuggestionsApplied
-            ? _locationController.text
-            : widget.plant?.aiTipsSource,
-        // Preserve existing aiTipsGeneratedAt
-        aiTipsGeneratedAt: widget.plant?.aiTipsGeneratedAt,
+        weatherLocation: _weatherLocationController.text,
+        selectedImageFile: _selectedImageFile,
+        initialImageUrl: _initialImageUrl,
       );
 
-      if (widget.plant == null) {
-        ref.read(plantListProvider.notifier).addPlant(plant);
-      } else {
-        ref.read(plantListProvider.notifier).updatePlant(plant);
-      }
       if (!mounted) return;
       Navigator.of(context).pop();
     }
@@ -428,6 +345,7 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
     final theme = Theme.of(context);
     final isEditing = widget.plant != null;
     final isOnline = ref.watch(isOnlineProvider);
+    final formState = ref.watch(addPlantFormProvider);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -523,9 +441,9 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
                         careInstructionsController: _careInstructionsController,
                         isOnline: isOnline,
                         showAiTooltip: _showAiTooltip,
-                        isGeneratingSuggestions: _isGeneratingSuggestions,
-                        aiSuggestionsApplied: _aiSuggestionsApplied,
-                        aiReasoning: _aiReasoning,
+                        isGeneratingSuggestions: formState.isGeneratingSuggestions,
+                        aiSuggestionsApplied: formState.aiSuggestionsApplied,
+                        aiReasoning: formState.aiReasoning,
                         onDismissAiTooltip: _dismissAiTooltip,
                         onGetAiSuggestions: _getAiSuggestions,
                         onSelectDate: _selectDate,
@@ -566,24 +484,29 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
                   child: SizedBox(
                     width: double.infinity,
                     height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isSaveEnabled ? _submitForm : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: theme.colorScheme.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        elevation: 4,
-                        shadowColor: theme.colorScheme.primary.withValues(alpha: 0.4),
-                      ),
-                      child: Text(
-                        isEditing ? 'Update Plant' : 'Save Plant',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _isSaveEnabled,
+                      builder: (context, isEnabled, child) {
+                        return ElevatedButton(
+                          onPressed: isEnabled ? _submitForm : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            foregroundColor: theme.colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 4,
+                            shadowColor: theme.colorScheme.primary.withValues(alpha: 0.4),
+                          ),
+                          child: Text(
+                            isEditing ? 'Update Plant' : 'Save Plant',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),

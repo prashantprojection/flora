@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/models/care_event.dart';
+import 'package:flora/utils/image_utils.dart';
 
 class GrowthTimeline extends StatelessWidget {
   final Plant plant;
@@ -206,8 +207,8 @@ class GrowthTimeline extends StatelessWidget {
             child: GestureDetector(
               onTap: () => _openFullScreenImage(context, path, label),
               child: file.existsSync()
-                  ? Image.file(
-                      file,
+                  ? buildImage(
+                      file.path,
                       fit: BoxFit.cover,
                       cacheWidth: 400,
                     )
@@ -274,8 +275,8 @@ class GrowthTimeline extends StatelessWidget {
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: file.existsSync()
-                        ? Image.file(
-                            file,
+                        ? buildImage(
+                            file.path,
                             fit: BoxFit.cover,
                             cacheWidth: 400,
                           )
@@ -303,7 +304,7 @@ class GrowthTimeline extends StatelessWidget {
       PageRouteBuilder(
         opaque: false,
         barrierDismissible: true,
-        pageBuilder: (context, _, __) {
+        pageBuilder: (context, _, _) {
           return _FullScreenImageViewer(path: path, title: title);
         },
       ),
@@ -355,8 +356,8 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                 child: Hero(
                   tag: widget.path,
                   child: file.existsSync()
-                      ? Image.file(
-                          file,
+                      ? buildImage(
+                          file.path,
                           fit: BoxFit.contain,
                         )
                       : const Icon(

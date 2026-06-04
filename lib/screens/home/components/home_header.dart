@@ -4,7 +4,13 @@ import 'package:flora/utils/app_theme.dart';
 
 class HomeHeader extends StatelessWidget {
   final String greeting;
-  const HomeHeader({super.key, required this.greeting});
+  final String mascotPath;
+
+  const HomeHeader({
+    super.key,
+    required this.greeting,
+    required this.mascotPath,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -74,9 +80,9 @@ class HomeHeader extends StatelessWidget {
                 child: SizedBox(
                   height: 140,
                   child: Image.asset(
-                    'assets/logo.png',
+                    mascotPath,
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Icon(
+                    errorBuilder: (_, _, _) => Icon(
                       LucideIcons.sprout,
                       size: 120,
                       color: AppTheme.primary.withValues(alpha: 0.1),

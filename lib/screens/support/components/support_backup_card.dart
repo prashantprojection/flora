@@ -37,7 +37,6 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
-        allowMultiple: false,
       );
 
       if (result == null || result.files.isEmpty) {
