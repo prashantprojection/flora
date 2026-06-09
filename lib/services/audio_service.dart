@@ -27,10 +27,10 @@ class AudioService {
       final initResult = await initialize();
       if (!initResult) return;
     }
-    
+
     _isListening = true;
     // TODO: Call speech_to_text listen() with SpeechListenOptions(listenMode: ListenMode.dictation, partialResults: true)
-    
+
     // Simulating a callback for architecture purposes
     // onResult("This is a skeleton voice implementation", true);
   }

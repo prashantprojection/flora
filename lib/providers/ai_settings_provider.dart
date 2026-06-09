@@ -1,60 +1,83 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flora/services/preferences_service.dart';
+import 'package:flora/models/llm_models.dart';
+import 'package:flora/models/llm_providers.dart';
 
 class AiSettingsState {
-  final String activeProvider;
-  final String? geminiApiKey; // null means use env fallback
-  final String geminiModelId;
+  final AiProvider activeProvider;
+  final Map<AiProvider, String?> apiKeys;
+  final String activeModelId;
 
   const AiSettingsState({
     required this.activeProvider,
-    this.geminiApiKey,
-    required this.geminiModelId,
+    this.apiKeys = const {},
+    required this.activeModelId,
   });
 
+  String? get activeApiKey => apiKeys[activeProvider];
+
   AiSettingsState copyWith({
-    String? activeProvider,
-    String? geminiApiKey,
-    String? geminiModelId,
+    AiProvider? activeProvider,
+    Map<AiProvider, String?>? apiKeys,
+    String? activeModelId,
   }) {
     return AiSettingsState(
       activeProvider: activeProvider ?? this.activeProvider,
-      geminiApiKey: geminiApiKey ?? this.geminiApiKey,
-      geminiModelId: geminiModelId ?? this.geminiModelId,
+      apiKeys: apiKeys ?? this.apiKeys,
+      activeModelId: activeModelId ?? this.activeModelId,
     );
   }
 }
 
 class AiSettingsNotifier extends Notifier<AiSettingsState> {
+  // Precondition: PreferencesService.init() must be called in main() before runApp.
   @override
   AiSettingsState build() {
+    final Map<AiProvider, String?> keys = {};
+    for (final provider in AiProvider.values) {
+      keys[provider] = PreferencesService.getApiKeyForProvider(provider);
+    }
+
     return AiSettingsState(
       activeProvider: PreferencesService.activeAiProvider,
-      geminiApiKey: PreferencesService.userGeminiApiKey,
-      geminiModelId: PreferencesService.selectedGeminiModel,
+      apiKeys: keys,
+      activeModelId: PreferencesService.activeModelId,
     );
   }
 
   Future<void> saveSettings({
-    required String activeProvider,
-    String? geminiApiKey,
-    required String geminiModelId,
+    required AiProvider activeProvider,
+    String? apiKey,
+    required String activeModelId,
   }) async {
+    // If provider changed, validate if the current modelId is valid for the new provider
+    String finalModelId = activeModelId;
+    final availableModels = kModelsByProvider[activeProvider] ?? [];
+    if (!availableModels.any((m) => m.id == finalModelId)) {
+      finalModelId = kDefaultModelByProvider[activeProvider] ?? finalModelId;
+    }
+
     await PreferencesService.setActiveAiProvider(activeProvider);
-    await PreferencesService.setUserGeminiApiKey(geminiApiKey);
-    await PreferencesService.setSelectedGeminiModel(geminiModelId);
+    await PreferencesService.setApiKeyForProvider(activeProvider, apiKey);
+    await PreferencesService.setActiveModelId(finalModelId);
+
+    final newApiKeys = Map<AiProvider, String?>.from(state.apiKeys);
+    newApiKeys[activeProvider] = apiKey;
 
     state = AiSettingsState(
       activeProvider: activeProvider,
-      geminiApiKey: geminiApiKey,
-      geminiModelId: geminiModelId,
+      apiKeys: newApiKeys,
+      activeModelId: finalModelId,
     );
   }
 
-  Future<void> clearApiKey() async {
-    await PreferencesService.setUserGeminiApiKey(null);
-    state = state.copyWith(geminiApiKey: null);
+  Future<void> saveActiveModel(String modelId) async {
+    await PreferencesService.setActiveModelId(modelId);
+    state = state.copyWith(activeModelId: modelId);
   }
 }
 
-final aiSettingsProvider = NotifierProvider<AiSettingsNotifier, AiSettingsState>(AiSettingsNotifier.new);
+final aiSettingsProvider =
+    NotifierProvider<AiSettingsNotifier, AiSettingsState>(
+      AiSettingsNotifier.new,
+    );

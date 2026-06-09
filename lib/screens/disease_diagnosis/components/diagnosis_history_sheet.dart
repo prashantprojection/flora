@@ -1,11 +1,11 @@
 import 'package:flora/utils/image_utils.dart';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:flora/providers/diagnosis_provider.dart';
 import 'package:flora/models/diagnosis_record.dart';
+import 'package:flora/models/diagnosis_data.dart';
 
 class DiagnosisHistorySheet extends ConsumerWidget {
   final void Function(DiagnosisRecord record) onViewRecord;
@@ -128,26 +128,20 @@ class DiagnosisHistorySheet extends ConsumerWidget {
                   leading: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: RepaintBoundary(
-                      child: File(record.imagePath).existsSync()
-                          ? buildImage(record.imagePath,
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.cover,
-                              cacheWidth: 240,
-                              gaplessPlayback: true,
-                              errorBuilder: (_, _, _) => Container(
-                                width: 60,
-                                height: 60,
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.broken_image),
-                              ),
-                            )
-                          : Container(
-                              width: 60,
-                              height: 60,
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.broken_image),
-                            ),
+                      child: buildImage(
+                        record.imagePath,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        cacheWidth: 240,
+                        gaplessPlayback: true,
+                        errorBuilder: (_, _, _) => Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.broken_image),
+                        ),
+                      ),
                     ),
                   ),
                   title: Text(
@@ -155,8 +149,8 @@ class DiagnosisHistorySheet extends ConsumerWidget {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    record.diagnosis.split('\n').first,
-                    maxLines: 2,
+                    DiagnosisData.tryParse(record.diagnosis)?.diseaseName ?? 'Analysis Record',
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   onTap: () => onViewRecord(record),

@@ -26,7 +26,9 @@ class BackupService {
   static List<Plant> parseBackup(String jsonStr) {
     final decoded = jsonDecode(jsonStr);
     if (decoded is List) {
-      return decoded.map((item) => Plant.fromJson(item as Map<String, dynamic>)).toList();
+      return decoded
+          .map((item) => Plant.fromJson(item as Map<String, dynamic>))
+          .toList();
     }
     throw Exception('Invalid backup format. Must be a list of plants.');
   }

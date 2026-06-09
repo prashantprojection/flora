@@ -17,14 +17,19 @@ class ImageService {
 
   /// Copies a temporary image to the app's persistent document directory.
   /// If it's already persistent, returns the original path.
-  static Future<String> saveImagePermanently(String temporaryPath, {String prefix = 'img'}) async {
+  static Future<String> saveImagePermanently(
+    String temporaryPath, {
+    String prefix = 'img',
+  }) async {
     if (temporaryPath.contains('app_flutter')) {
       return temporaryPath;
     }
     try {
       final docsDir = await getApplicationDocumentsDirectory();
       final fileName = '${prefix}_${const Uuid().v4()}.jpg';
-      final savedImage = await File(temporaryPath).copy('${docsDir.path}/$fileName');
+      final savedImage = await File(
+        temporaryPath,
+      ).copy('${docsDir.path}/$fileName');
       return savedImage.path;
     } catch (e) {
       debugPrint('Error saving image permanently: $e');

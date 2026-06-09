@@ -35,7 +35,9 @@ class CustomDropdownButton<T> extends StatelessWidget {
         color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
       ),
       filled: true,
-      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.1,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(

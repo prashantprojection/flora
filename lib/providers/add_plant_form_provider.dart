@@ -34,7 +34,8 @@ class AddPlantFormState {
     bool clearError = false,
   }) {
     return AddPlantFormState(
-      isGeneratingSuggestions: isGeneratingSuggestions ?? this.isGeneratingSuggestions,
+      isGeneratingSuggestions:
+          isGeneratingSuggestions ?? this.isGeneratingSuggestions,
       aiReasoning: clearAiReasoning ? null : (aiReasoning ?? this.aiReasoning),
       aiSuggestionsApplied: aiSuggestionsApplied ?? this.aiSuggestionsApplied,
       isVerifyingImage: isVerifyingImage ?? this.isVerifyingImage,
@@ -91,7 +92,10 @@ class AddPlantFormNotifier extends Notifier<AddPlantFormState> {
       state = state.copyWith(isGeneratingSuggestions: false, error: e.message);
       return {'isValid': false};
     } catch (e) {
-      state = state.copyWith(isGeneratingSuggestions: false, error: 'An unexpected error occurred.');
+      state = state.copyWith(
+        isGeneratingSuggestions: false,
+        error: 'An unexpected error occurred.',
+      );
       return {'isValid': false};
     }
   }
@@ -176,8 +180,12 @@ class AddPlantFormNotifier extends Notifier<AddPlantFormState> {
       stage: plantStage,
       hasGrowLight: hasGrowLight,
       weatherLocation: weatherLocation.isEmpty ? null : weatherLocation,
-      aiReasoning: state.aiSuggestionsApplied ? state.aiReasoning : existingPlant?.aiReasoning,
-      aiTipsSource: state.aiSuggestionsApplied ? location : existingPlant?.aiTipsSource,
+      aiReasoning: state.aiSuggestionsApplied
+          ? state.aiReasoning
+          : existingPlant?.aiReasoning,
+      aiTipsSource: state.aiSuggestionsApplied
+          ? location
+          : existingPlant?.aiTipsSource,
       aiTipsGeneratedAt: existingPlant?.aiTipsGeneratedAt,
     );
 
@@ -189,6 +197,7 @@ class AddPlantFormNotifier extends Notifier<AddPlantFormState> {
   }
 }
 
-final addPlantFormProvider = NotifierProvider<AddPlantFormNotifier, AddPlantFormState>(() {
-  return AddPlantFormNotifier();
-});
+final addPlantFormProvider =
+    NotifierProvider<AddPlantFormNotifier, AddPlantFormState>(() {
+      return AddPlantFormNotifier();
+    });

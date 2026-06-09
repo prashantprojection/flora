@@ -35,8 +35,9 @@ class DiagnosisRecord {
       diagnosis: diagnosis ?? this.diagnosis,
       date: date ?? this.date,
       isHelpful: isHelpful ?? this.isHelpful,
-      chatMessages:
-          clearChatMessages ? null : (chatMessages ?? this.chatMessages),
+      chatMessages: clearChatMessages
+          ? null
+          : (chatMessages ?? this.chatMessages),
     );
   }
 }

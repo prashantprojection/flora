@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flora/models/diagnosis_record.dart';
@@ -11,7 +12,7 @@ class LocalDiagnosisRepository implements DiagnosisRepository {
   final Box<DiagnosisRecord> _box;
 
   LocalDiagnosisRepository()
-      : _box = Hive.box<DiagnosisRecord>('diagnosis_history');
+    : _box = Hive.box<DiagnosisRecord>('diagnosis_history');
 
   @override
   List<DiagnosisRecord> getDiagnoses() {
@@ -32,8 +33,9 @@ class LocalDiagnosisRepository implements DiagnosisRepository {
     // Copy image to app documents for long-term persistence
     final appDir = await getApplicationDocumentsDirectory();
     final fileName = '${record.id}.jpg';
-    final savedImage =
-        await File(record.imagePath).copy('${appDir.path}/$fileName');
+    final savedImage = await File(
+      record.imagePath,
+    ).copy('${appDir.path}/$fileName');
 
     final persistedRecord = DiagnosisRecord(
       id: record.id,
@@ -67,7 +69,13 @@ class LocalDiagnosisRepository implements DiagnosisRepository {
     if (key == null) return;
     final record = _box.get(key)!;
     final file = File(record.imagePath);
-    if (await file.exists()) await file.delete();
+    if (await file.exists()) {
+      try {
+        await file.delete();
+      } catch (e) {
+        debugPrint('[LocalDiagnosisRepository] Failed to delete image: $e');
+      }
+    }
     await _box.delete(key);
   }
 
@@ -75,7 +83,13 @@ class LocalDiagnosisRepository implements DiagnosisRepository {
   Future<void> clearHistory() async {
     for (final record in _box.values) {
       final file = File(record.imagePath);
-      if (await file.exists()) await file.delete();
+      if (await file.exists()) {
+        try {
+          await file.delete();
+        } catch (e) {
+          debugPrint('[LocalDiagnosisRepository] Failed to clear image: $e');
+        }
+      }
     }
     await _box.clear();
   }

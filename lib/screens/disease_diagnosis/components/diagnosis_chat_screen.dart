@@ -23,13 +23,10 @@ class DiagnosisChatScreen extends ConsumerStatefulWidget {
       _DiagnosisChatScreenState();
 }
 
-class _DiagnosisChatScreenState extends ConsumerState<DiagnosisChatScreen>
-    with AutomaticKeepAliveClientMixin {
+class _DiagnosisChatScreenState extends ConsumerState<DiagnosisChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  @override
-  bool get wantKeepAlive => true;
 
   @override
   void dispose() {
@@ -52,7 +49,7 @@ class _DiagnosisChatScreenState extends ConsumerState<DiagnosisChatScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent + 120,
+          0.0,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
@@ -60,16 +57,9 @@ class _DiagnosisChatScreenState extends ConsumerState<DiagnosisChatScreen>
     });
   }
 
-  void _fillInput(String text) {
-    _textController.text = text;
-    _textController.selection = TextSelection.fromPosition(
-      TextPosition(offset: text.length),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final state = ref.watch(diagnosisSessionProvider);
     final notifier = ref.read(diagnosisSessionProvider.notifier);
     final followUps = state.followUpHistory;
@@ -114,20 +104,31 @@ class _DiagnosisChatScreenState extends ConsumerState<DiagnosisChatScreen>
                 ? _buildEmptyState(context)
                 : ListView.builder(
                     controller: _scrollController,
+                    reverse: true, // Auto-pins to the bottom natively
                     padding: const EdgeInsets.all(16),
                     itemCount: followUps.length + (state.isLoading ? 1 : 0),
                     itemBuilder: (context, index) {
-                      if (index == followUps.length) {
-                        return _buildLoadingBubble(context, state.loadingMessage);
+                      // Because it's reversed, index 0 is at the bottom of the screen.
+                      // If loading, the loading bubble is at the very bottom (index 0).
+                      if (state.isLoading && index == 0) {
+                        return _buildLoadingBubble(
+                          context,
+                          state.loadingMessage,
+                        );
                       }
 
-                      final message = followUps[index];
+                      final messageIndex = followUps.length - 1 - (state.isLoading ? index - 1 : index);
+                      final message = followUps[messageIndex];
+
                       if (message.role == LlmRole.user) {
                         return _UserBubble(message: message);
                       } else {
                         return FollowUpGenUiRenderer(
                           message: message,
-                          onSuggestionTap: _fillInput,
+                          onSuggestionTap: (suggestion) async {
+                            _textController.text = suggestion;
+                            await _sendMessage();
+                          },
                         );
                       }
                     },
@@ -162,9 +163,9 @@ class _DiagnosisChatScreenState extends ConsumerState<DiagnosisChatScreen>
             Text(
               'Ask Dr. Flo anything',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.foreground,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: AppTheme.foreground,
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -205,7 +206,9 @@ class _DiagnosisChatScreenState extends ConsumerState<DiagnosisChatScreen>
             Text(
               message ?? 'Thinking...',
               style: const TextStyle(
-                  color: AppTheme.mutedForeground, fontSize: 14),
+                color: AppTheme.mutedForeground,
+                fontSize: 14,
+              ),
             ),
           ],
         ),
@@ -240,6 +243,20 @@ class _UserBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            if (message.imagePath != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: buildImage(
+                    message.imagePath!,
+                    width: 160,
+                    height: 160,
+                    fit: BoxFit.cover,
+                    cacheWidth: 320, // 2× for sharp rendering; avoids full-res decode
+                  ),
+                ),
+              ),
             Text(
               message.text,
               style: const TextStyle(color: Colors.white, fontSize: 15),
@@ -278,16 +295,14 @@ class _ChatInputBar extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          border:
-              Border(top: BorderSide(color: AppTheme.border, width: 0.5)),
+          border: Border(top: BorderSide(color: AppTheme.border, width: 0.5)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (pendingAttachment != null)
               Padding(
-                padding:
-                    const EdgeInsets.only(top: 8, left: 16, right: 16),
+                padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
                 child: Row(
                   children: [
                     ClipRRect(
@@ -304,8 +319,9 @@ class _ChatInputBar extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Image attached',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: AppTheme.mutedForeground),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.mutedForeground,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -337,12 +353,14 @@ class _ChatInputBar extends StatelessWidget {
                       enabled: !isLoading,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => onSend(),
-                      maxLines: null,
+                      minLines: 1,
+                      maxLines: 5,
                       decoration: InputDecoration(
                         hintText: 'Ask Dr. Flo...',
                         hintStyle: TextStyle(
-                          color:
-                              AppTheme.mutedForeground.withValues(alpha: 0.7),
+                          color: AppTheme.mutedForeground.withValues(
+                            alpha: 0.7,
+                          ),
                           fontSize: 14,
                         ),
                         border: OutlineInputBorder(
@@ -353,7 +371,9 @@ class _ChatInputBar extends StatelessWidget {
                         fillColor: theme.colorScheme.surfaceContainerHighest
                             .withValues(alpha: 0.5),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                       ),
                     ),
                   ),

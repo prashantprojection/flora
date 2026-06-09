@@ -28,13 +28,15 @@ class AiPromptTemplates {
         'If they are in the Southern Hemisphere, reverse the seasons. '
         'If the location is tropical, note wet/dry seasons instead.';
     if (plantStage != null && plantStage != 'mature') {
-      prompt += ' Note that this plant is currently a $plantStage. Adjust care advice appropriately.';
+      prompt +=
+          ' Note that this plant is currently a $plantStage. Adjust care advice appropriately.';
     }
     if (hasGrowLight) {
       prompt += ' The plant is growing under a grow light.';
     }
     if (weatherLocation != null && weatherLocation.isNotEmpty) {
-      prompt += ' The user\'s broader weather location/climate is $weatherLocation.';
+      prompt +=
+          ' The user\'s broader weather location/climate is $weatherLocation.';
     }
     if (additionalDetails.isNotEmpty) {
       prompt +=
@@ -97,15 +99,18 @@ Respond in Markdown format with the following structure (if it is a plant):
         ? 'User is in room "$location". '
         : '';
     if (weatherLocation != null && weatherLocation.isNotEmpty) {
-      locationClause += 'The local climate is "$weatherLocation". Adjust watering frequency for this climate. ';
+      locationClause +=
+          'The local climate is "$weatherLocation". Adjust watering frequency for this climate. ';
     }
     if (hasGrowLight) {
       locationClause += 'The plant is under a grow light (extended daylight). ';
     }
     if (plantStage != null && plantStage != 'mature') {
-      locationClause += 'The plant is a $plantStage, so it may need gentler, more frequent watering. ';
+      locationClause +=
+          'The plant is a $plantStage, so it may need gentler, more frequent watering. ';
     }
-    locationClause += 'If outdoor location, suggest higher watering frequency (2-4 days). '
+    locationClause +=
+        'If outdoor location, suggest higher watering frequency (2-4 days). '
         'If indoor, suggest standard indoor frequency (7-14 days).';
 
     return '''

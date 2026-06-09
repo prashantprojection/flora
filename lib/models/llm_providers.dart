@@ -1,63 +1,82 @@
+import 'package:flutter/foundation.dart';
+
+enum AiProvider { gemini, openai, anthropic }
+
+extension AiProviderX on AiProvider {
+  String get stringId {
+    switch (this) {
+      case AiProvider.gemini:
+        return 'gemini';
+      case AiProvider.openai:
+        return 'openai';
+      case AiProvider.anthropic:
+        return 'anthropic';
+    }
+  }
+
+  static AiProvider fromStringId(String id) {
+    return AiProvider.values.firstWhere(
+      (p) => p.stringId == id,
+      orElse: () => AiProvider.gemini,
+    );
+  }
+}
+
+@immutable
 class AiProviderOption {
-  final String id;
+  final AiProvider id;
   final String displayName;
   final bool isSupported;
+  final String apiKeyUrl;
+  final String apiKeyHint;
 
   const AiProviderOption({
     required this.id,
     required this.displayName,
     this.isSupported = true,
+    required this.apiKeyUrl,
+    required this.apiKeyHint,
   });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is AiProviderOption &&
+        other.id == id &&
+        other.displayName == displayName &&
+        other.isSupported == isSupported &&
+        other.apiKeyUrl == apiKeyUrl &&
+        other.apiKeyHint == apiKeyHint;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, displayName, isSupported, apiKeyUrl, apiKeyHint);
 }
 
-class LlmModelOption {
-  final String id;
-  final String displayName;
-  final String badge;
-  final String description;
-
-  const LlmModelOption({
-    required this.id,
-    required this.displayName,
-    required this.badge,
-    required this.description,
-  });
-}
-
-const kAiProviders = [
+const List<AiProviderOption> kAiProviders = [
   AiProviderOption(
-    id: 'gemini',
+    id: AiProvider.gemini,
     displayName: 'Google Gemini',
+    apiKeyUrl: 'https://aistudio.google.com/app/apikey',
+    apiKeyHint: 'AIzaSy...',
   ),
   AiProviderOption(
-    id: 'openai',
+    id: AiProvider.openai,
     displayName: 'OpenAI',
-    isSupported: false, // For future scalability
+    isSupported: true,
+    apiKeyUrl: 'https://platform.openai.com/api-keys',
+    apiKeyHint: 'sk-proj-...',
   ),
   AiProviderOption(
-    id: 'anthropic',
+    id: AiProvider.anthropic,
     displayName: 'Anthropic Claude',
-    isSupported: false, // For future scalability
+    isSupported: true,
+    apiKeyUrl: 'https://console.anthropic.com/settings/keys',
+    apiKeyHint: 'sk-ant-...',
   ),
 ];
 
-const kGeminiModels = [
-  LlmModelOption(
-    id: 'gemini-2.5-flash',
-    displayName: 'Gemini 2.5 Flash',
-    badge: '⚡ Fast',
-    description: 'Fast and balanced, ideal for plant care and diagnosis.',
-  ),
-  LlmModelOption(
-    id: 'gemini-2.5-pro',
-    displayName: 'Gemini 2.5 Pro',
-    badge: '🧠 Smart',
-    description: 'Higher accuracy and deeper reasoning for complex queries.',
-  ),
-  LlmModelOption(
-    id: 'gemini-2.5-flash-lite',
-    displayName: 'Gemini 2.5 Flash Lite',
-    badge: '🪶 Lite',
-    description: 'Ultra-fast and efficient for simple tasks.',
-  ),
-];
+final List<AiProviderOption> kSupportedAiProviders = kAiProviders
+    .where((p) => p.isSupported)
+    .toList();

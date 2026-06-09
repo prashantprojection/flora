@@ -48,10 +48,7 @@ class _ScheduleCalendarStripState extends State<ScheduleCalendarStrip> {
 
   void _generateDates() {
     final today = DateTime.now();
-    _dates = List.generate(
-      14,
-      (index) => today.add(Duration(days: index)),
-    );
+    _dates = List.generate(14, (index) => today.add(Duration(days: index)));
   }
 
   bool _isSameDay(DateTime a, DateTime b) {
@@ -60,15 +57,16 @@ class _ScheduleCalendarStripState extends State<ScheduleCalendarStrip> {
 
   void _scrollToSelectedDate() {
     if (!_scrollController.hasClients) return;
-    
+
     final index = _dates.indexWhere((d) => _isSameDay(d, widget.selectedDate));
     if (index != -1) {
       final screenWidth = MediaQuery.of(context).size.width;
       // Calculate offset to center the item
-      final offset = (index * _itemWidth) + 16.0 - (screenWidth / 2) + (_itemWidth / 2);
+      final offset =
+          (index * _itemWidth) + 16.0 - (screenWidth / 2) + (_itemWidth / 2);
       final maxScroll = _scrollController.position.maxScrollExtent;
       final clampedOffset = offset.clamp(0.0, maxScroll);
-      
+
       _scrollController.animateTo(
         clampedOffset,
         duration: const Duration(milliseconds: 300),
@@ -138,12 +136,14 @@ class _ScheduleCalendarStripState extends State<ScheduleCalendarStrip> {
                     date.day.toString(),
                     style: TextStyle(
                       fontSize: 18,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w700,
                       color: isSelected
                           ? theme.colorScheme.onPrimary
                           : (isToday
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurface),
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurface),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -155,10 +155,12 @@ class _ScheduleCalendarStripState extends State<ScheduleCalendarStrip> {
                       color: isSelected
                           ? theme.colorScheme.onPrimary
                           : (isToday
-                              ? theme.colorScheme.primary
-                              : (hasTasks
-                                  ? theme.colorScheme.primary.withValues(alpha: 0.5)
-                                  : Colors.transparent)),
+                                ? theme.colorScheme.primary
+                                : (hasTasks
+                                      ? theme.colorScheme.primary.withValues(
+                                          alpha: 0.5,
+                                        )
+                                      : Colors.transparent)),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -171,4 +173,3 @@ class _ScheduleCalendarStripState extends State<ScheduleCalendarStrip> {
     );
   }
 }
-

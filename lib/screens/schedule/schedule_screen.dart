@@ -79,7 +79,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             hasTasksForDate: (date) => _hasTasksForDate(plants, date),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: Divider(
               height: 1,
               thickness: 1,
@@ -165,7 +168,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                             return completed;
                           } else {
                             // Snooze
-                            final snoozed = await _showSnoozeDialog(context, task);
+                            final snoozed = await _showSnoozeDialog(
+                              context,
+                              task,
+                            );
                             return snoozed;
                           }
                         },
@@ -371,21 +377,28 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     return true;
   }
 
-  Future<bool> _showSnoozeDialog(BuildContext context, UpcomingCareTask task) async {
+  Future<bool> _showSnoozeDialog(
+    BuildContext context,
+    UpcomingCareTask task,
+  ) async {
     final result = await showModalBottomSheet<_SnoozeResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: _SnoozeDialogWidget(task: task),
       ),
     );
 
     if (result != null) {
       if (!context.mounted) return false;
-      
-      ref.read(plantListProvider.notifier).snoozePlantWithDuration(
+
+      ref
+          .read(plantListProvider.notifier)
+          .snoozePlantWithDuration(
             task.plantId,
             type: task.type,
             days: result.days,
@@ -393,11 +406,13 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
           );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Snoozed for ${result.days} day${result.days > 1 ? 's' : ''}'),
+          content: Text(
+            'Snoozed for ${result.days} day${result.days > 1 ? 's' : ''}',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
-      
+
       return true;
     }
     return false;
@@ -446,7 +461,9 @@ class _SnoozeDialogWidgetState extends State<_SnoozeDialogWidget> {
             children: [
               Text(
                 'Snooze ${widget.task.type.name.capitalize()}',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               IconButton(
                 icon: const Icon(LucideIcons.x),
@@ -457,7 +474,9 @@ class _SnoozeDialogWidgetState extends State<_SnoozeDialogWidget> {
           const SizedBox(height: 16),
           Text(
             'Soil still wet? Choose how many days to push this task back.',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 24),
           Row(
@@ -473,8 +492,12 @@ class _SnoozeDialogWidgetState extends State<_SnoozeDialogWidget> {
                     showCheckmark: false,
                     selectedColor: theme.colorScheme.primaryContainer,
                     labelStyle: TextStyle(
-                      color: _selectedDays == days ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface,
-                      fontWeight: _selectedDays == days ? FontWeight.bold : FontWeight.normal,
+                      color: _selectedDays == days
+                          ? theme.colorScheme.onPrimaryContainer
+                          : theme.colorScheme.onSurface,
+                      fontWeight: _selectedDays == days
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -489,7 +512,9 @@ class _SnoozeDialogWidgetState extends State<_SnoozeDialogWidget> {
               labelText: 'Notes (Optional)',
               hintText: 'e.g. Soil still very moist',
               prefixIcon: const Icon(LucideIcons.penLine, size: 20),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -497,7 +522,10 @@ class _SnoozeDialogWidgetState extends State<_SnoozeDialogWidget> {
             width: double.infinity,
             child: FilledButton(
               onPressed: () {
-                Navigator.pop(context, _SnoozeResult(_selectedDays, _notesController.text.trim()));
+                Navigator.pop(
+                  context,
+                  _SnoozeResult(_selectedDays, _notesController.text.trim()),
+                );
               },
               child: const Text('Confirm Snooze'),
             ),

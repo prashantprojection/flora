@@ -82,15 +82,24 @@ class SeverityUpdateCard extends StatelessWidget {
               // Before → After badges
               Row(
                 children: [
-                  _SeverityBadge(label: prev, color: prevColor,
-                      icon: _severityIcon(prev)),
+                  _SeverityBadge(
+                    label: prev,
+                    color: prevColor,
+                    icon: _severityIcon(prev),
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Icon(LucideIcons.arrowRight,
-                        size: 16, color: AppTheme.mutedForeground),
+                    child: Icon(
+                      LucideIcons.arrowRight,
+                      size: 16,
+                      color: AppTheme.mutedForeground,
+                    ),
                   ),
-                  _SeverityBadge(label: updated, color: updatedColor,
-                      icon: _severityIcon(updated)),
+                  _SeverityBadge(
+                    label: updated,
+                    color: updatedColor,
+                    icon: _severityIcon(updated),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -116,7 +125,8 @@ class SeverityUpdateCard extends StatelessWidget {
                     color: updatedColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: updatedColor.withValues(alpha: 0.2)),
+                      color: updatedColor.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,

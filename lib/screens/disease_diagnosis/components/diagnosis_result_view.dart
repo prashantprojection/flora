@@ -45,20 +45,21 @@ class _DiagnosisResultViewState extends ConsumerState<DiagnosisResultView> {
 
     // Push the chat screen only after the first message is sent
     if (mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const DiagnosisChatScreen()),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const DiagnosisChatScreen()));
     }
   }
 
   Future<void> _openExistingChat() async {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const DiagnosisChatScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const DiagnosisChatScreen()));
   }
 
   ({String label, Color color, Color bg, IconData icon}) _severity(
-      DiagnosisData data) {
+    DiagnosisData data,
+  ) {
     final sev = data.severity.toLowerCase();
     if (sev == 'low') {
       return (
@@ -122,287 +123,309 @@ class _DiagnosisResultViewState extends ConsumerState<DiagnosisResultView> {
       initialFeedback = record?.isHelpful;
     }
 
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // ── Hero Image AppBar ─────────────────────────────────────────────
-          SliverAppBar(
-            expandedHeight: selectedImage != null ? 260 : 0,
-            pinned: true,
-            backgroundColor: AppTheme.background,
-            leading: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(LucideIcons.x, size: 18, color: Colors.white),
-              ),
-              onPressed: notifier.resetState,
-            ),
-            actions: [
-              // TTS
-              IconButton(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          notifier.resetState();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.background,
+        body: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // ── Hero Image AppBar ─────────────────────────────────────────────
+            SliverAppBar(
+              expandedHeight: selectedImage != null ? 260 : 0,
+              pinned: true,
+              backgroundColor: AppTheme.background,
+              leading: IconButton(
                 icon: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.35),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    state.isSpeaking
-                        ? Icons.stop_circle_outlined
-                        : LucideIcons.volume2,
-                    size: 18,
-                    color: Colors.white,
-                  ),
+                  child: const Icon(LucideIcons.x, size: 18, color: Colors.white),
                 ),
-                onPressed: notifier.speakDiagnosis,
+                onPressed: notifier.resetState,
               ),
-              // Share
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    shape: BoxShape.circle,
+              actions: [
+                // TTS
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      state.isSpeaking
+                          ? Icons.stop_circle_outlined
+                          : LucideIcons.volume2,
+                      size: 18,
+                      color: Colors.white,
+                    ),
                   ),
-                  child: const Icon(LucideIcons.share2,
-                      size: 18, color: Colors.white),
+                  onPressed: notifier.speakDiagnosis,
                 ),
-                onPressed: () {
-                  if (selectedImage != null) {
-                    final report = StringBuffer();
-                    report.writeln('Flora Diagnosis: ${data.diseaseName}');
-                    report.writeln('Severity: ${data.severity}');
-                    if (data.treatment.isNotEmpty) {
-                      report.writeln('\nTreatment:');
-                      for (final t in data.treatment) {
-                        report.writeln('- $t');
+                // Share
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LucideIcons.share2,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                  onPressed: () {
+                    if (selectedImage != null) {
+                      final report = StringBuffer();
+                      report.writeln('Flora Diagnosis: ${data.diseaseName}');
+                      report.writeln('Severity: ${data.severity}');
+                      if (data.treatment.isNotEmpty) {
+                        report.writeln('\nTreatment:');
+                        for (final t in data.treatment) {
+                          report.writeln('- $t');
+                        }
                       }
+                      PlatformShareService.shareFiles([
+                        selectedImage.path,
+                      ], text: report.toString());
                     }
-                    PlatformShareService.shareFiles(
-                      [selectedImage.path],
-                      text: report.toString(),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(width: 8),
-            ],
-            flexibleSpace: selectedImage != null
-                ? FlexibleSpaceBar(
-                    background: buildImage(
-                      selectedImage.path,
-                      fit: BoxFit.cover,
-                      cacheWidth: 800,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: AppTheme.muted,
-                        child: const Center(
-                          child: Icon(LucideIcons.imageOff,
-                              size: 48, color: AppTheme.mutedForeground),
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
+              flexibleSpace: selectedImage != null
+                  ? FlexibleSpaceBar(
+                      background: buildImage(
+                        selectedImage.path,
+                        fit: BoxFit.cover,
+                        cacheWidth: 800,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppTheme.muted,
+                          child: const Center(
+                            child: Icon(
+                              LucideIcons.imageOff,
+                              size: 48,
+                              color: AppTheme.mutedForeground,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                : null,
-          ),
+                    )
+                  : null,
+            ),
 
-          // ── Content ───────────────────────────────────────────────────────
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // Disease name + severity
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
+            // ── Content ───────────────────────────────────────────────────────
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // Disease name + severity
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          data.diseaseName,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.foreground,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: sev.bg,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(sev.icon, size: 13, color: sev.color),
+                            const SizedBox(width: 4),
+                            Text(
+                              sev.label,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: sev.color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        LucideIcons.bot,
+                        size: 13,
+                        color: AppTheme.mutedForeground,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Flo AI Analysis',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: AppTheme.mutedForeground,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ── Symptoms ─────────────────────────────────────────────────
+                  if (data.symptoms.isNotEmpty) ...[
+                    DiagnosisSectionCard(
+                      icon: LucideIcons.microscope,
+                      title: 'Symptoms',
+                      color: const Color(0xFF7B1FA2),
+                      bg: const Color(0xFFF3E5F5),
+                      child: DiagnosisBulletList(
+                        items: data.symptoms,
+                        color: const Color(0xFF7B1FA2),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ── Cause ────────────────────────────────────────────────────
+                  if (data.causes.isNotEmpty) ...[
+                    DiagnosisSectionCard(
+                      icon: LucideIcons.searchCode,
+                      title: 'Cause',
+                      color: const Color(0xFFBF360C),
+                      bg: const Color(0xFFFBE9E7),
+                      child: DiagnosisBulletList(
+                        items: data.causes,
+                        color: const Color(0xFFBF360C),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ── Treatment ─────────────────────────────────────────────────
+                  if (data.treatment.isNotEmpty) ...[
+                    DiagnosisSectionCard(
+                      icon: LucideIcons.stethoscope,
+                      title: 'Treatment',
+                      color: const Color(0xFF1B5E20),
+                      bg: const Color(0xFFE8F5E9),
+                      child: DiagnosisBulletList(
+                        items: data.treatment,
+                        color: const Color(0xFF1B5E20),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ── Prevention ────────────────────────────────────────────────
+                  if (data.prevention.isNotEmpty) ...[
+                    DiagnosisSectionCard(
+                      icon: LucideIcons.shieldCheck,
+                      title: 'Prevention',
+                      color: const Color(0xFF01579B),
+                      bg: const Color(0xFFE3F2FD),
+                      child: DiagnosisBulletList(
+                        items: data.prevention,
+                        color: const Color(0xFF01579B),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ── Additional Notes ──────────────────────────────────────────
+                  if (data.additionalNotes != null &&
+                      data.additionalNotes!.isNotEmpty) ...[
+                    DiagnosisSectionCard(
+                      icon: LucideIcons.notebookPen,
+                      title: 'Additional Notes',
+                      color: AppTheme.mutedForeground,
+                      bg: AppTheme.muted,
                       child: Text(
-                        data.diseaseName,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        data.additionalNotes!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          height: 1.55,
                           color: AppTheme.foreground,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: sev.bg,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(sev.icon, size: 13, color: sev.color),
-                          const SizedBox(width: 4),
-                          Text(
-                            sev.label,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: sev.color,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    const SizedBox(height: 12),
                   ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(LucideIcons.bot,
-                        size: 13, color: AppTheme.mutedForeground),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Flo AI Analysis',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: AppTheme.mutedForeground,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
 
-                // ── Symptoms ─────────────────────────────────────────────────
-                if (data.symptoms.isNotEmpty) ...[
-                  DiagnosisSectionCard(
-                    icon: LucideIcons.microscope,
-                    title: 'Symptoms',
-                    color: const Color(0xFF7B1FA2),
-                    bg: const Color(0xFFF3E5F5),
-                    child: DiagnosisBulletList(
-                        items: data.symptoms,
-                        color: const Color(0xFF7B1FA2)),
-                  ),
+                  // ── Feedback ──────────────────────────────────────────────────
+                  const SizedBox(height: 8),
+                  const Divider(),
                   const SizedBox(height: 12),
-                ],
-
-                // ── Cause ────────────────────────────────────────────────────
-                if (data.causes.isNotEmpty) ...[
-                  DiagnosisSectionCard(
-                    icon: LucideIcons.searchCode,
-                    title: 'Cause',
-                    color: const Color(0xFFBF360C),
-                    bg: const Color(0xFFFBE9E7),
-                    child: DiagnosisBulletList(
-                        items: data.causes,
-                        color: const Color(0xFFBF360C)),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                // ── Treatment ─────────────────────────────────────────────────
-                if (data.treatment.isNotEmpty) ...[
-                  DiagnosisSectionCard(
-                    icon: LucideIcons.stethoscope,
-                    title: 'Treatment',
-                    color: const Color(0xFF1B5E20),
-                    bg: const Color(0xFFE8F5E9),
-                    child: DiagnosisBulletList(
-                        items: data.treatment,
-                        color: const Color(0xFF1B5E20)),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                // ── Prevention ────────────────────────────────────────────────
-                if (data.prevention.isNotEmpty) ...[
-                  DiagnosisSectionCard(
-                    icon: LucideIcons.shieldCheck,
-                    title: 'Prevention',
-                    color: const Color(0xFF01579B),
-                    bg: const Color(0xFFE3F2FD),
-                    child: DiagnosisBulletList(
-                        items: data.prevention,
-                        color: const Color(0xFF01579B)),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                // ── Additional Notes ──────────────────────────────────────────
-                if (data.additionalNotes != null &&
-                    data.additionalNotes!.isNotEmpty) ...[
-                  DiagnosisSectionCard(
-                    icon: LucideIcons.notebookPen,
-                    title: 'Additional Notes',
-                    color: AppTheme.mutedForeground,
-                    bg: AppTheme.muted,
+                  Center(
                     child: Text(
-                      data.additionalNotes!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        height: 1.55,
-                        color: AppTheme.foreground,
+                      'Was this diagnosis helpful?',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                ],
-
-                // ── Feedback ──────────────────────────────────────────────────
-                const SizedBox(height: 8),
-                const Divider(),
-                const SizedBox(height: 12),
-                Center(
-                  child: Text(
-                    'Was this diagnosis helpful?',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  _FeedbackRow(
+                    initialFeedback: initialFeedback,
+                    onFeedback: notifier.provideFeedback,
                   ),
-                ),
-                const SizedBox(height: 12),
-                _FeedbackRow(
-                  initialFeedback: initialFeedback,
-                  onFeedback: notifier.provideFeedback,
-                ),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                // ── Scan Another ──────────────────────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: notifier.resetState,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                  // ── Scan Another ──────────────────────────────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: notifier.resetState,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      icon: const Icon(LucideIcons.scan, size: 18),
+                      label: const Text(
+                        'Scan Another Plant',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
-                    icon: const Icon(LucideIcons.scan, size: 18),
-                    label: const Text(
-                      'Scan Another Plant',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
                   ),
-                ),
 
-                // Bottom padding to make room for the sticky input bar
-                const SizedBox(height: 100),
-              ]),
+                  // Bottom padding to make room for the sticky input bar
+                  const SizedBox(height: 100),
+                ]),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
 
-      // ── Sticky Follow-up Input Bar ─────────────────────────────────────────
-      bottomNavigationBar: _FollowUpInputBar(
-        controller: _inputController,
-        focusNode: _inputFocusNode,
-        hasExistingChat: state.hasFollowUps,
-        isLoading: state.isLoading,
-        pendingAttachment: state.pendingAttachment,
-        onPickAttachment: notifier.pickAttachment,
-        onClearAttachment: notifier.clearAttachment,
-        onSend: _sendFirstFollowUp,
-        onOpenChat: _openExistingChat,
+        // ── Sticky Follow-up Input Bar ─────────────────────────────────────────
+        bottomNavigationBar: _FollowUpInputBar(
+          controller: _inputController,
+          focusNode: _inputFocusNode,
+          hasExistingChat: state.hasFollowUps,
+          isLoading: state.isLoading,
+          pendingAttachment: state.pendingAttachment,
+          onPickAttachment: notifier.pickAttachment,
+          onClearAttachment: notifier.clearAttachment,
+          onSend: _sendFirstFollowUp,
+          onOpenChat: _openExistingChat,
+        ),
       ),
     );
   }
@@ -441,8 +464,7 @@ class _FollowUpInputBar extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          border:
-              Border(top: BorderSide(color: AppTheme.border, width: 0.5)),
+          border: Border(top: BorderSide(color: AppTheme.border, width: 0.5)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -457,29 +479,33 @@ class _FollowUpInputBar extends StatelessWidget {
             // "Continue conversation" chip — shown only if chat already exists
             if (hasExistingChat)
               Padding(
-                padding:
-                    const EdgeInsets.only(top: 8, left: 16, right: 16),
+                padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
                 child: GestureDetector(
                   onTap: onOpenChat,
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: AppTheme.primary.withValues(alpha: 0.2)),
+                        color: AppTheme.primary.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(LucideIcons.messageCircle,
-                            size: 15, color: AppTheme.primary),
+                        Icon(
+                          LucideIcons.messageCircle,
+                          size: 15,
+                          color: AppTheme.primary,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Continue conversation with Dr. Flo →',
-                          style:
-                              theme.textTheme.labelMedium?.copyWith(
+                          style: theme.textTheme.labelMedium?.copyWith(
                             color: AppTheme.primary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -493,8 +519,7 @@ class _FollowUpInputBar extends StatelessWidget {
             // Attachment preview
             if (pendingAttachment != null)
               Padding(
-                padding:
-                    const EdgeInsets.only(top: 8, left: 16, right: 16),
+                padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
                 child: Row(
                   children: [
                     ClipRRect(
@@ -511,7 +536,8 @@ class _FollowUpInputBar extends StatelessWidget {
                       child: Text(
                         'Image attached',
                         style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppTheme.mutedForeground),
+                          color: AppTheme.mutedForeground,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -553,8 +579,9 @@ class _FollowUpInputBar extends StatelessWidget {
                             ? 'Ask Dr. Flo another question...'
                             : 'Ask Dr. Flo a follow-up question...',
                         hintStyle: TextStyle(
-                          color: AppTheme.mutedForeground
-                              .withValues(alpha: 0.7),
+                          color: AppTheme.mutedForeground.withValues(
+                            alpha: 0.7,
+                          ),
                           fontSize: 14,
                         ),
                         border: OutlineInputBorder(
@@ -565,7 +592,9 @@ class _FollowUpInputBar extends StatelessWidget {
                         fillColor: theme.colorScheme.surfaceContainerHighest
                             .withValues(alpha: 0.5),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                       ),
                     ),
                   ),
@@ -618,6 +647,22 @@ class _FeedbackRowState extends State<_FeedbackRow> {
   }
 
   @override
+  void didUpdateWidget(_FeedbackRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialFeedback != oldWidget.initialFeedback) {
+      setState(() {
+        if (widget.initialFeedback == true) {
+          _selected = 1;
+        } else if (widget.initialFeedback == false) {
+          _selected = 2;
+        } else {
+          _selected = 0;
+        }
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -647,8 +692,9 @@ class _FeedbackRowState extends State<_FeedbackRow> {
             widget.onFeedback(false);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content:
-                    Text("Thanks for the feedback! We'll improve Dr. Flo."),
+                content: Text(
+                  "Thanks for the feedback! We'll improve Dr. Flo.",
+                ),
                 duration: Duration(seconds: 2),
               ),
             );

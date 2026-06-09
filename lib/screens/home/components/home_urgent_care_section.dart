@@ -52,7 +52,10 @@ class HomeUrgentCareSection extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.error.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
@@ -74,8 +77,14 @@ class HomeUrgentCareSection extends StatelessWidget {
                     backgroundColor: theme.colorScheme.error,
                     foregroundColor: theme.colorScheme.onError,
                     visualDensity: VisualDensity.compact,
-                    textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),

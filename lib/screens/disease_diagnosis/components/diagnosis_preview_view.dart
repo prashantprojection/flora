@@ -49,7 +49,10 @@ class DiagnosisPreviewView extends StatelessWidget {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 8.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -77,7 +80,7 @@ class DiagnosisPreviewView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Observations Input
                 Text(
                   'Any specific concerns?',
@@ -93,29 +96,38 @@ class DiagnosisPreviewView extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: 'E.g. yellow leaves, brown spots, bugs...',
                     hintStyle: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.6,
+                      ),
                     ),
                     filled: true,
                     fillColor: theme.colorScheme.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: 2,
+                      ),
                     ),
                     prefixIcon: Icon(
-                      LucideIcons.pencilLine, 
-                      color: theme.colorScheme.primary
+                      LucideIcons.pencilLine,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                   maxLines: 3,
@@ -123,7 +135,7 @@ class DiagnosisPreviewView extends StatelessWidget {
                   textInputAction: TextInputAction.done,
                 ),
                 const SizedBox(height: 40),
-                
+
                 // Primary Action Button
                 AnimatedPress(
                   onTap: isLoading ? null : onStartDiagnosis,
@@ -131,14 +143,16 @@ class DiagnosisPreviewView extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     decoration: BoxDecoration(
-                      color: isLoading 
-                          ? theme.colorScheme.primary.withValues(alpha: 0.5) 
+                      color: isLoading
+                          ? theme.colorScheme.primary.withValues(alpha: 0.5)
                           : theme.colorScheme.primary,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         if (!isLoading)
                           BoxShadow(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.3,
+                            ),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -168,7 +182,7 @@ class DiagnosisPreviewView extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Premium Glassmorphism Loading Overlay
           if (isLoading)
             Positioned.fill(
@@ -187,7 +201,9 @@ class DiagnosisPreviewView extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.2,
+                                ),
                                 blurRadius: 30,
                                 spreadRadius: 5,
                               ),

@@ -41,10 +41,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // Uses inDays (floor division) — consistent with PlantCard and avoids rounding bugs
   // where a plant watered moments ago still shows "needs care" due to .round().
   static DateTime _startOfDay(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
+    return DateTime.utc(date.year, date.month, date.day);
   }
 
-  static Map<String, dynamic> getCareStatus(Plant plant) {
+  static ({bool needsCare, int overdue, int daysUntil}) getCareStatus(Plant plant) {
     final today = _startOfDay(DateTime.now());
     final nextWatering = _startOfDay(plant.nextWatering);
     int minDays = nextWatering.difference(today).inDays;
@@ -55,27 +55,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (diff < minDays) minDays = diff;
     }
 
-    return {
-      'needsCare': minDays <= 0,
-      'overdue': minDays < 0 ? minDays.abs() : 0,
-      'daysUntil': minDays,
-    };
+    return (
+      needsCare: minDays <= 0,
+      overdue: minDays < 0 ? minDays.abs() : 0,
+      daysUntil: minDays,
+    );
   }
 
-  void _showBulkWaterDialog(BuildContext scaffoldContext, List<Plant> needyPlants) {
+  void _showBulkWaterDialog(
+    BuildContext scaffoldContext,
+    List<Plant> needyPlants,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
         return BulkWaterDialog(
           plants: needyPlants,
           onConfirm: (selectedIds) {
-            for (final id in selectedIds) {
+            for (final (i, id) in selectedIds.indexed) {
               ref
                   .read(plantListProvider.notifier)
                   .addCareEvent(
                     id,
                     CareEvent(
-                      id: DateTime.now().toIso8601String(),
+                      id: '${DateTime.now().toIso8601String()}_$i',
                       date: DateTime.now(),
                       type: CareType.watering,
                     ),
@@ -159,10 +162,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   ({String greeting, String mascotPath}) _getGreetingData() {
     final hour = DateTime.now().hour;
-    if (hour < 5) return (greeting: 'Good Night 🌙', mascotPath: AppAssets.floNight);
-    if (hour < 12) return (greeting: 'Good Morning 🌤', mascotPath: AppAssets.floMorning);
-    if (hour < 17) return (greeting: 'Good Afternoon ☀️', mascotPath: AppAssets.floAfternoon);
-    if (hour < 22) return (greeting: 'Good Evening 🌙', mascotPath: AppAssets.floEvening);
+    if (hour < 5) {
+      return (greeting: 'Good Night 🌙', mascotPath: AppAssets.floNight);
+    }
+    if (hour < 12) {
+      return (greeting: 'Good Morning 🌤', mascotPath: AppAssets.floMorning);
+    }
+    if (hour < 17) {
+      return (
+        greeting: 'Good Afternoon ☀️',
+        mascotPath: AppAssets.floAfternoon,
+      );
+    }
+    if (hour < 22) {
+      return (greeting: 'Good Evening 🌙', mascotPath: AppAssets.floEvening);
+    }
     return (greeting: 'Good Night 🌙', mascotPath: AppAssets.floNight);
   }
 
@@ -171,41 +185,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final allPlants = ref.watch(plantListProvider);
     final theme = Theme.of(context);
     final isLargeScreen = MediaQuery.of(context).size.width > 600;
-    
+
     final greetingData = _getGreetingData();
 
     // Pre-compute statuses ONCE per build to avoid O(n²) re-computation.
-    final careStatuses = {
-      for (final p in allPlants) p.id: getCareStatus(p),
-    };
+    final careStatuses = {for (final p in allPlants) p.id: getCareStatus(p)};
 
+    final query = _searchQuery.toLowerCase();
     final plants = allPlants.where((p) {
       if (_selectedFilter == 'Archive') {
-        return p.status == PlantStatus.givenAway || p.status == PlantStatus.deceased;
+        return p.status == PlantStatus.givenAway ||
+            p.status == PlantStatus.deceased;
       }
-      final bool isActive = p.status == PlantStatus.active || p.status == PlantStatus.quarantine || p.status == null;
+      final bool isActive =
+          p.status == PlantStatus.active ||
+          p.status == PlantStatus.quarantine ||
+          p.status == null;
       if (!isActive) return false;
 
       final matchesSearch =
-          p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (p.species?.toLowerCase().contains(_searchQuery.toLowerCase()) ??
+          p.name.toLowerCase().contains(query) ||
+          (p.species?.toLowerCase().contains(query) ??
               false);
       final matchesFilter =
           _selectedFilter == 'All' || p.location == _selectedFilter;
       return matchesSearch && matchesFilter;
     }).toList();
 
-    final plantsNeedingCare = _selectedFilter == 'Archive'
-        ? <Plant>[]
-        : plants.where((p) => careStatuses[p.id]!['needsCare'] as bool).toList()
-          ..sort(
-            (a, b) =>
-                (careStatuses[b.id]!['overdue'] as int) -
-                (careStatuses[a.id]!['overdue'] as int),
-          );
+    List<Plant> plantsNeedingCare;
+    if (_selectedFilter == 'Archive') {
+      plantsNeedingCare = [];
+    } else {
+      plantsNeedingCare = plants
+          .where((p) => careStatuses[p.id]!.needsCare)
+          .toList()
+        ..sort(
+          (a, b) => careStatuses[b.id]!.overdue - careStatuses[a.id]!.overdue,
+        );
+    }
 
-    final otherPlants =
-        plants.where((p) => !(careStatuses[p.id]!['needsCare'] as bool)).toList();
+    final otherPlants = plants
+        .where((p) => !careStatuses[p.id]!.needsCare)
+        .toList();
 
     return Scaffold(
       body: Builder(
@@ -234,8 +255,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           decoration: InputDecoration(
                             hintText: 'Search your garden...',
                             prefixIcon: Padding(
-                              padding: const EdgeInsets.only(left: 10, right: 4),
-                              child: Image.asset(AppAssets.floAvatar, width: 20, height: 20),
+                              padding: const EdgeInsets.only(
+                                left: 10,
+                                right: 4,
+                              ),
+                              child: Image.asset(
+                                AppAssets.floAvatar,
+                                width: 20,
+                                height: 20,
+                              ),
                             ),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -254,7 +282,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 0,
+                            ),
                           ),
                         ),
                       ),
@@ -264,8 +294,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     else ...[
                       HomeUrgentCareSection(
                         plantsNeedingCare: plantsNeedingCare,
-                        onWaterAll: () =>
-                            _showBulkWaterDialog(scaffoldContext, plantsNeedingCare),
+                        onWaterAll: () => _showBulkWaterDialog(
+                          scaffoldContext,
+                          plantsNeedingCare,
+                        ),
                       ),
                       SliverToBoxAdapter(
                         child: Padding(
@@ -282,8 +314,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 _selectedFilter == 'Archive'
                                     ? 'Archived Plants'
                                     : plantsNeedingCare.isNotEmpty
-                                        ? 'Thriving Plants'
-                                        : 'Your Collection',
+                                    ? 'Thriving Plants'
+                                    : 'Your Collection',
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),

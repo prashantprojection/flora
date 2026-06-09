@@ -90,13 +90,17 @@ class ProductSuggestionCard extends StatelessWidget {
                     color: Colors.amber.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: Colors.amber.withValues(alpha: 0.3)),
+                      color: Colors.amber.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(LucideIcons.triangleAlert,
-                          size: 14, color: Colors.amber),
+                      const Icon(
+                        LucideIcons.triangleAlert,
+                        size: 14,
+                        color: Colors.amber,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(

@@ -1,4 +1,3 @@
-
 import 'package:flora/api/llm/llm_engine.dart';
 import 'package:flora/models/llm_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,7 +31,8 @@ class AiToolOrchestrator {
         'properties': {
           'diseaseName': {
             'type': 'string',
-            'description': 'The name of the detected disease or health condition.',
+            'description':
+                'The name of the detected disease or health condition.',
           },
           'severity': {
             'type': 'string',
@@ -112,10 +112,7 @@ class AiToolOrchestrator {
       schema: {
         'type': 'object',
         'properties': {
-          'title': {
-            'type': 'string',
-            'description': 'Title of the checklist.',
-          },
+          'title': {'type': 'string', 'description': 'Title of the checklist.'},
           'steps': {
             'type': 'array',
             'items': {'type': 'string'},
@@ -130,7 +127,7 @@ class AiToolOrchestrator {
     const LlmTool(
       name: 'render_quick_answers',
       description:
-          'Renders a brief answer with 2-4 tappable follow-up suggestion chips. Use for conversational exchanges where the user might want to dig deeper.',
+          'Renders a brief answer with optional tappable follow-up suggestion chips. Use for conversational exchanges.',
       schema: {
         'type': 'object',
         'properties': {
@@ -142,10 +139,10 @@ class AiToolOrchestrator {
             'type': 'array',
             'items': {'type': 'string'},
             'description':
-                '2-4 short follow-up questions the user might want to ask next.',
+                '0-3 short follow-up questions. ONLY provide these if they are highly relevant and necessary.',
           },
         },
-        'required': ['answer', 'suggestions'],
+        'required': ['answer'],
       },
     ),
 
@@ -175,7 +172,12 @@ class AiToolOrchestrator {
                 'The single most important action the user should take right now.',
           },
         },
-        'required': ['previousSeverity', 'updatedSeverity', 'reason', 'urgentAction'],
+        'required': [
+          'previousSeverity',
+          'updatedSeverity',
+          'reason',
+          'urgentAction',
+        ],
       },
     ),
 
@@ -216,8 +218,24 @@ class AiToolOrchestrator {
   /// Initial diagnosis call — sends image + first user message.
   /// Called only once per session. No image stripping needed.
   Future<AiToolResult> executeToolChat(List<LlmMessage> messages) async {
+    final systemPrompt = LlmMessage(
+      role: LlmRole.user,
+      text:
+          'You are Dr. Flo, an expert plant disease diagnostician. '
+          'The user will send you a photo of a plant. '
+          'You MUST analyze it and call the render_diagnosis_card tool to display the result. '
+          'Do NOT respond with plain text. ALWAYS call the render_diagnosis_card tool.',
+    );
+    const systemAck = LlmMessage(
+      role: LlmRole.model,
+      text: 'Understood. I will analyze the plant photo and call render_diagnosis_card.',
+    );
+
     final config = LlmConfig(tools: _tools);
-    final response = await _engine.generateContent(messages, config: config);
+    final response = await _engine.generateContent(
+      [systemPrompt, systemAck, ...messages],
+      config: config,
+    );
 
     return AiToolResult(
       functionCall: response.functionCall,

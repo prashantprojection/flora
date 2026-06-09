@@ -52,13 +52,23 @@ class PlantDetailScreen extends ConsumerWidget {
                   ),
                 ),
                 onPressed: () {
-                  final String speciesStr = plant.species?.isNotEmpty == true ? ' (${plant.species})' : '';
-                  final String locationStr = plant.location?.isNotEmpty == true ? '\nLocation: ${plant.location}' : '';
-                  final String frequencyStr = plant.wateringFrequency != null ? '\nWatering Schedule: Every ${plant.wateringFrequency} days' : '';
-                  final String instructionsStr = plant.careInstructions?.isNotEmpty == true ? '\n\nCare Instructions:\n${plant.careInstructions}' : '';
-                  
-                  final summary = 'Plant Summary: ${plant.name}$speciesStr$locationStr$frequencyStr$instructionsStr';
-                  
+                  final String speciesStr = plant.species?.isNotEmpty == true
+                      ? ' (${plant.species})'
+                      : '';
+                  final String locationStr = plant.location?.isNotEmpty == true
+                      ? '\nLocation: ${plant.location}'
+                      : '';
+                  final String frequencyStr = plant.wateringFrequency != null
+                      ? '\nWatering Schedule: Every ${plant.wateringFrequency} days'
+                      : '';
+                  final String instructionsStr =
+                      plant.careInstructions?.isNotEmpty == true
+                      ? '\n\nCare Instructions:\n${plant.careInstructions}'
+                      : '';
+
+                  final summary =
+                      'Plant Summary: ${plant.name}$speciesStr$locationStr$frequencyStr$instructionsStr';
+
                   PlatformShareService.shareText(
                     summary,
                     subject: 'Care Info: ${plant.name}',
@@ -216,7 +226,8 @@ class PlantDetailScreen extends ConsumerWidget {
         ),
       );
     }
-    return buildImage(plant.imagePath!,
+    return buildImage(
+      plant.imagePath!,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => Container(
         color: Colors.grey.shade200,
@@ -245,7 +256,9 @@ class PlantDetailScreen extends ConsumerWidget {
                 context,
                 icon: LucideIcons.mapPin,
                 label: 'Location',
-                value: plant.location?.isNotEmpty == true ? plant.location! : 'N/A',
+                value: plant.location?.isNotEmpty == true
+                    ? plant.location!
+                    : 'N/A',
                 color: Colors.red,
               ),
             ),
@@ -269,7 +282,11 @@ class PlantDetailScreen extends ConsumerWidget {
                 context,
                 icon: LucideIcons.flaskConical,
                 label: 'Fertilize',
-                value: _getScheduleNextDate(plant, CareType.fertilizing) != null ? _formatNextDate(_getScheduleNextDate(plant, CareType.fertilizing)!) : 'N/A',
+                value: _getScheduleNextDate(plant, CareType.fertilizing) != null
+                    ? _formatNextDate(
+                        _getScheduleNextDate(plant, CareType.fertilizing)!,
+                      )
+                    : 'N/A',
                 color: Colors.purple,
               ),
             ),
@@ -279,7 +296,11 @@ class PlantDetailScreen extends ConsumerWidget {
                 context,
                 icon: LucideIcons.scissors,
                 label: 'Prune',
-                value: _getScheduleNextDate(plant, CareType.pruning) != null ? _formatNextDate(_getScheduleNextDate(plant, CareType.pruning)!) : 'N/A',
+                value: _getScheduleNextDate(plant, CareType.pruning) != null
+                    ? _formatNextDate(
+                        _getScheduleNextDate(plant, CareType.pruning)!,
+                      )
+                    : 'N/A',
                 color: Colors.orange,
               ),
             ),

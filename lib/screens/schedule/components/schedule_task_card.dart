@@ -36,7 +36,10 @@ class ScheduleTaskCard extends StatelessWidget {
     this.onSkip,
   });
 
-  Map<String, dynamic> _getCareTypeDetails(CareType type, BuildContext context) {
+  Map<String, dynamic> _getCareTypeDetails(
+    CareType type,
+    BuildContext context,
+  ) {
     switch (type) {
       case CareType.watering:
         return {
@@ -111,7 +114,11 @@ class ScheduleTaskCard extends StatelessWidget {
                       : null,
                 ),
                 child: task.plantImage == null
-                    ? Icon(LucideIcons.flower2, color: details['color'], size: 20)
+                    ? Icon(
+                        LucideIcons.flower2,
+                        color: details['color'],
+                        size: 20,
+                      )
                     : null,
               ),
               const SizedBox(width: 12),
@@ -133,7 +140,9 @@ class ScheduleTaskCard extends StatelessWidget {
                           child: Text(
                             details['label'],
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: isActionable ? details['color'] : Colors.grey,
+                              color: isActionable
+                                  ? details['color']
+                                  : Colors.grey,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
                             ),
@@ -163,11 +172,16 @@ class ScheduleTaskCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (task.type == CareType.watering && !task.isCompleted) ...[
+                    if (task.type == CareType.watering &&
+                        !task.isCompleted) ...[
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Icon(LucideIcons.lightbulb, size: 10, color: theme.colorScheme.primary),
+                          Icon(
+                            LucideIcons.lightbulb,
+                            size: 10,
+                            color: theme.colorScheme.primary,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -182,27 +196,35 @@ class ScheduleTaskCard extends StatelessWidget {
                         ],
                       ),
                     ],
-                    if ((task.type == CareType.fertilizing || task.type == CareType.pruning) && !task.isCompleted) ...[
+                    if ((task.type == CareType.fertilizing ||
+                            task.type == CareType.pruning) &&
+                        !task.isCompleted) ...[
                       Builder(
                         builder: (context) {
                           final month = DateTime.now().month;
                           // Standard NH winter check (Dec, Jan, Feb)
-                          final isWinter = month == 12 || month == 1 || month == 2;
+                          final isWinter =
+                              month == 12 || month == 1 || month == 2;
                           if (isWinter) {
                             return Padding(
                               padding: const EdgeInsets.only(top: 2),
                               child: Row(
                                 children: [
-                                  Icon(LucideIcons.snowflake, size: 10, color: Colors.blue.shade300),
+                                  Icon(
+                                    LucideIcons.snowflake,
+                                    size: 10,
+                                    color: Colors.blue.shade300,
+                                  ),
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
                                       'Winter dormancy: consider skipping',
-                                      style: theme.textTheme.labelSmall?.copyWith(
-                                        color: Colors.blue.shade700,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: Colors.blue.shade700,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -230,7 +252,7 @@ class ScheduleTaskCard extends StatelessWidget {
                               color: details['color'].withValues(alpha: 0.15),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
-                            )
+                            ),
                           ],
                   ),
                   child: ElevatedButton(
@@ -297,7 +319,10 @@ class ScheduleTaskCard extends StatelessWidget {
                           children: [
                             Icon(LucideIcons.clock, size: 18),
                             SizedBox(width: 12),
-                            Text('Snooze (1 day)', style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text(
+                              'Snooze (1 day)',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
                           ],
                         ),
                       ),
@@ -307,7 +332,10 @@ class ScheduleTaskCard extends StatelessWidget {
                           children: [
                             Icon(LucideIcons.skipForward, size: 18),
                             SizedBox(width: 12),
-                            Text('Skip this cycle', style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text(
+                              'Skip this cycle',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
                           ],
                         ),
                       ),

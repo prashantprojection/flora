@@ -272,16 +272,21 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
 
       if (recommendations != null) {
         setState(() {
-          _wateringScheduleController.text = recommendations['wateringFrequency']?.toString() ?? '';
-          
+          _wateringScheduleController.text =
+              recommendations['wateringFrequency']?.toString() ?? '';
+
           final rawFert = recommendations['fertilizingFrequency'];
-          final int fert = rawFert is int ? rawFert : (int.tryParse(rawFert?.toString() ?? '') ?? 0);
+          final int fert = rawFert is int
+              ? rawFert
+              : (int.tryParse(rawFert?.toString() ?? '') ?? 0);
           if (fert > 0) _fertilizingScheduleController.text = fert.toString();
-          
+
           final rawPrune = recommendations['pruningFrequency'];
-          final int prune = rawPrune is int ? rawPrune : (int.tryParse(rawPrune?.toString() ?? '') ?? 0);
+          final int prune = rawPrune is int
+              ? rawPrune
+              : (int.tryParse(rawPrune?.toString() ?? '') ?? 0);
           if (prune > 0) _pruningScheduleController.text = prune.toString();
-          
+
           _careInstructionsController.text = recommendations['advice'] ?? '';
         });
         _validateForm();
@@ -436,40 +441,48 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
                         locationController: _locationController,
                         dateController: _dateController,
                         wateringScheduleController: _wateringScheduleController,
-                        fertilizingScheduleController: _fertilizingScheduleController,
+                        fertilizingScheduleController:
+                            _fertilizingScheduleController,
                         pruningScheduleController: _pruningScheduleController,
                         careInstructionsController: _careInstructionsController,
                         isOnline: isOnline,
                         showAiTooltip: _showAiTooltip,
-                        isGeneratingSuggestions: formState.isGeneratingSuggestions,
+                        isGeneratingSuggestions:
+                            formState.isGeneratingSuggestions,
                         aiSuggestionsApplied: formState.aiSuggestionsApplied,
                         aiReasoning: formState.aiReasoning,
                         onDismissAiTooltip: _dismissAiTooltip,
                         onGetAiSuggestions: _getAiSuggestions,
                         onSelectDate: _selectDate,
                         isOtherSelected: _isOtherSelected,
-                        onIsOtherSelectedChanged: (value) => setState(() => _isOtherSelected = value),
+                        onIsOtherSelectedChanged: (value) =>
+                            setState(() => _isOtherSelected = value),
                         onLocationChanged: (value) => setState(() {}),
                         isEditing: isEditing,
                         plantStage: _plantStage,
-                        onStageChanged: (val) => setState(() => _plantStage = val),
+                        onStageChanged: (val) =>
+                            setState(() => _plantStage = val),
                         plantStatus: _plantStatus,
-                        onStatusChanged: (val) => setState(() => _plantStatus = val),
+                        onStatusChanged: (val) =>
+                            setState(() => _plantStatus = val),
                         hasGrowLight: _hasGrowLight,
-                        onGrowLightChanged: (val) => setState(() => _hasGrowLight = val),
+                        onGrowLightChanged: (val) =>
+                            setState(() => _hasGrowLight = val),
                         weatherLocationController: _weatherLocationController,
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Sticky bottom action bar
                 Container(
                   padding: EdgeInsets.fromLTRB(
-                    24, 
-                    16, 
-                    24, 
-                    16 + MediaQuery.of(context).padding.bottom + MediaQuery.of(context).viewInsets.bottom
+                    24,
+                    16,
+                    24,
+                    16 +
+                        MediaQuery.of(context).padding.bottom +
+                        MediaQuery.of(context).viewInsets.bottom,
                   ),
                   decoration: BoxDecoration(
                     color: theme.scaffoldBackgroundColor,
@@ -496,7 +509,9 @@ class _AddPlantSheetState extends ConsumerState<AddPlantSheet> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             elevation: 4,
-                            shadowColor: theme.colorScheme.primary.withValues(alpha: 0.4),
+                            shadowColor: theme.colorScheme.primary.withValues(
+                              alpha: 0.4,
+                            ),
                           ),
                           child: Text(
                             isEditing ? 'Update Plant' : 'Save Plant',

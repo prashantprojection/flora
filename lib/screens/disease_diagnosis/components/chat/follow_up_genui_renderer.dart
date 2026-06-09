@@ -48,8 +48,7 @@ class FollowUpGenUiRenderer extends StatelessWidget {
           return CareChecklist(data: json);
         }
         if (json.containsKey('suggestions')) {
-          return QuickAnswersCard(
-              data: json, onSuggestionTap: onSuggestionTap);
+          return QuickAnswersCard(data: json, onSuggestionTap: onSuggestionTap);
         }
         if (json.containsKey('updatedSeverity')) {
           return SeverityUpdateCard(data: json);

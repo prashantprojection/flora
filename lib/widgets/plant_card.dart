@@ -15,23 +15,23 @@ class PlantCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final wateringStatus = _getWateringStatus(plant);
-    final statusColor = wateringStatus['color'] as Color;
-    final needsWater = wateringStatus['needsWater'] as bool;
+    final statusColor = wateringStatus.color;
+    final needsWater = wateringStatus.needsWater;
 
     return Semantics(
-      label: '${plant.name}, ${wateringStatus['text']}',
+      label: '${plant.name}, ${wateringStatus.text}',
       button: true,
-      child: GestureDetector(
-        onTap: () => context.push('/plant/${plant.id}'),
-        child: Card(
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          elevation: needsWater ? 4 : 2,
-          shadowColor: needsWater
-              ? theme.colorScheme.error.withValues(alpha: 0.3)
-              : Colors.black12,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        elevation: needsWater ? 4 : 2,
+        shadowColor: needsWater
+            ? theme.colorScheme.error.withValues(alpha: 0.3)
+            : Colors.black12,
+        child: InkWell(
+          onTap: () => context.push('/plant/${plant.id}'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -87,13 +87,13 @@ class PlantCard extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              wateringStatus['icon'] as IconData,
+                              wateringStatus.icon,
                               size: 11,
                               color: Colors.white,
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              wateringStatus['text'] as String,
+                              wateringStatus.text,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,
@@ -119,8 +119,9 @@ class PlantCard extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.error
-                                    .withValues(alpha: 0.4),
+                                color: theme.colorScheme.error.withValues(
+                                  alpha: 0.4,
+                                ),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -147,13 +148,34 @@ class PlantCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (plant.status == PlantStatus.quarantine)
-                            _buildTopLeftBadge(theme, 'Quarantine', Colors.amber.shade700, LucideIcons.shieldAlert),
-                          if (plant.status == PlantStatus.givenAway || plant.status == PlantStatus.deceased)
-                            _buildTopLeftBadge(theme, 'Archived', Colors.grey.shade700, LucideIcons.archive),
+                            _buildTopLeftBadge(
+                              theme,
+                              'Quarantine',
+                              Colors.amber.shade700,
+                              LucideIcons.shieldAlert,
+                            ),
+                          if (plant.status == PlantStatus.givenAway ||
+                              plant.status == PlantStatus.deceased)
+                            _buildTopLeftBadge(
+                              theme,
+                              'Archived',
+                              Colors.grey.shade700,
+                              LucideIcons.archive,
+                            ),
                           if (plant.stage == PlantStage.seedling)
-                            _buildTopLeftBadge(theme, 'Seedling', Colors.green.shade600, LucideIcons.sprout),
+                            _buildTopLeftBadge(
+                              theme,
+                              'Seedling',
+                              Colors.green.shade600,
+                              LucideIcons.sprout,
+                            ),
                           if (plant.stage == PlantStage.cutting)
-                            _buildTopLeftBadge(theme, 'Cutting', Colors.teal.shade600, LucideIcons.scissors),
+                            _buildTopLeftBadge(
+                              theme,
+                              'Cutting',
+                              Colors.teal.shade600,
+                              LucideIcons.scissors,
+                            ),
                         ],
                       ),
                     ),
@@ -189,7 +211,8 @@ class PlantCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    if (plant.location != null && plant.location!.isNotEmpty) ...[
+                    if (plant.location != null &&
+                        plant.location!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -243,7 +266,9 @@ class PlantCard extends StatelessWidget {
               'No photo',
               style: TextStyle(
                 fontSize: 10,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.5,
+                ),
               ),
             ),
           ],
@@ -262,14 +287,20 @@ class PlantCard extends StatelessWidget {
       );
     }
 
-    return buildImage(imagePath,
+    return buildImage(
+      imagePath,
       fit: BoxFit.cover,
       cacheWidth: 500,
       errorBuilder: (_, _, _) => placeholder,
     );
   }
 
-  Widget _buildTopLeftBadge(ThemeData theme, String text, Color color, IconData icon) {
+  Widget _buildTopLeftBadge(
+    ThemeData theme,
+    String text,
+    Color color,
+    IconData icon,
+  ) {
     return Container(
       margin: const EdgeInsets.only(right: 4),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -303,40 +334,40 @@ class PlantCard extends StatelessWidget {
   }
 
   static DateTime _startOfDay(DateTime date) =>
-      DateTime(date.year, date.month, date.day);
+      DateTime.utc(date.year, date.month, date.day);
 
-  Map<String, dynamic> _getWateringStatus(Plant plant) {
+  ({String text, bool needsWater, Color color, IconData icon}) _getWateringStatus(Plant plant) {
     final today = _startOfDay(DateTime.now());
     final next = _startOfDay(plant.nextWatering);
     final days = next.difference(today).inDays;
 
     if (days < 0) {
-      return {
-        'text': '${days.abs()}d overdue',
-        'needsWater': true,
-        'color': AppTheme.destructive,
-        'icon': LucideIcons.droplets,
-      };
+      return (
+        text: '${days.abs()}d overdue',
+        needsWater: true,
+        color: AppTheme.destructive,
+        icon: LucideIcons.droplets,
+      );
     } else if (days == 0) {
-      return {
-        'text': 'Water today',
-        'needsWater': true,
-        'color': AppTheme.destructive,
-        'icon': LucideIcons.droplets,
-      };
+      return (
+        text: 'Water today',
+        needsWater: true,
+        color: AppTheme.destructive,
+        icon: LucideIcons.droplets,
+      );
     } else if (days <= 2) {
-      return {
-        'text': 'In ${days}d',
-        'needsWater': false,
-        'color': const Color(0xFFD97706),
-        'icon': LucideIcons.droplets,
-      };
+      return (
+        text: 'In ${days}d',
+        needsWater: false,
+        color: const Color(0xFFD97706),
+        icon: LucideIcons.droplets,
+      );
     }
-    return {
-      'text': 'In ${days}d',
-      'needsWater': false,
-      'color': AppTheme.primary,
-      'icon': LucideIcons.droplets,
-    };
+    return (
+      text: 'In ${days}d',
+      needsWater: false,
+      color: AppTheme.primary,
+      icon: LucideIcons.droplets,
+    );
   }
 }

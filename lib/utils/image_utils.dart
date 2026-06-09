@@ -22,8 +22,10 @@ Widget buildImage(
       fit: fit,
       width: width,
       height: height,
-      errorBuilder: errorBuilder ?? (context, error, stackTrace) =>
-          placeholder ?? const Icon(Icons.broken_image, color: Colors.grey),
+      errorBuilder:
+          errorBuilder ??
+          (context, error, stackTrace) =>
+              placeholder ?? const Icon(Icons.broken_image, color: Colors.grey),
     );
   }
 
@@ -34,8 +36,10 @@ Widget buildImage(
     height: height,
     cacheWidth: cacheWidth,
     gaplessPlayback: gaplessPlayback,
-    errorBuilder: errorBuilder ?? (context, error, stackTrace) =>
-        placeholder ?? const Icon(Icons.broken_image, color: Colors.grey),
+    errorBuilder:
+        errorBuilder ??
+        (context, error, stackTrace) =>
+            placeholder ?? const Icon(Icons.broken_image, color: Colors.grey),
   );
 }
 

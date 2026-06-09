@@ -75,7 +75,6 @@ class AddPlantForm extends StatefulWidget {
 }
 
 class _AddPlantFormState extends State<AddPlantForm> {
-
   Widget _buildSectionLabel(BuildContext context, String label) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
@@ -109,7 +108,9 @@ class _AddPlantFormState extends State<AddPlantForm> {
         color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
       ),
       filled: true,
-      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.1,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(
@@ -227,7 +228,9 @@ class _AddPlantFormState extends State<AddPlantForm> {
                           onChanged: (value) {
                             if (value == 'Other') {
                               widget.onIsOtherSelectedChanged(true);
-                              if (locations.contains(widget.locationController.text)) {
+                              if (locations.contains(
+                                widget.locationController.text,
+                              )) {
                                 widget.locationController.clear();
                               }
                             } else {
@@ -251,7 +254,8 @@ class _AddPlantFormState extends State<AddPlantForm> {
                               hint: 'e.g., Sunroom',
                               icon: LucideIcons.mapPin,
                             ),
-                            onChanged: (value) => widget.onLocationChanged(value),
+                            onChanged: (value) =>
+                                widget.onLocationChanged(value),
                           ),
                         ],
                       ],
@@ -265,7 +269,8 @@ class _AddPlantFormState extends State<AddPlantForm> {
                   hint: 'Select stage',
                   icon: LucideIcons.sprout,
                   items: PlantStage.values,
-                  itemLabelBuilder: (stage) => stage.name[0].toUpperCase() + stage.name.substring(1),
+                  itemLabelBuilder: (stage) =>
+                      stage.name[0].toUpperCase() + stage.name.substring(1),
                   onChanged: (val) {
                     if (val != null) widget.onStageChanged(val);
                   },
@@ -305,7 +310,10 @@ class _AddPlantFormState extends State<AddPlantForm> {
                 SwitchListTile(
                   title: const Text('Grow Light'),
                   subtitle: const Text('Plant is kept under a grow light'),
-                  secondary: Icon(LucideIcons.lamp, color: theme.colorScheme.primary),
+                  secondary: Icon(
+                    LucideIcons.lamp,
+                    color: theme.colorScheme.primary,
+                  ),
                   value: widget.hasGrowLight,
                   onChanged: widget.onGrowLightChanged,
                   contentPadding: EdgeInsets.zero,
@@ -333,10 +341,14 @@ class _AddPlantFormState extends State<AddPlantForm> {
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.secondary.withValues(alpha: 0.15),
+                        color: theme.colorScheme.secondary.withValues(
+                          alpha: 0.15,
+                        ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: theme.colorScheme.secondary.withValues(alpha: 0.4),
+                          color: theme.colorScheme.secondary.withValues(
+                            alpha: 0.4,
+                          ),
                         ),
                       ),
                       child: Row(
@@ -365,13 +377,16 @@ class _AddPlantFormState extends State<AddPlantForm> {
                       ),
                     ),
                   ),
-                
+
                 Tooltip(
-                  message: widget.isOnline ? '' : 'Offline — Flo AI is unavailable',
+                  message: widget.isOnline
+                      ? ''
+                      : 'Offline — Flo AI is unavailable',
                   child: SizedBox(
                     width: double.infinity,
                     child: TextButton.icon(
-                      onPressed: (!widget.isOnline || widget.isGeneratingSuggestions)
+                      onPressed:
+                          (!widget.isOnline || widget.isGeneratingSuggestions)
                           ? null
                           : widget.onGetAiSuggestions,
                       icon: widget.isGeneratingSuggestions
@@ -384,7 +399,8 @@ class _AddPlantFormState extends State<AddPlantForm> {
                               LucideIcons.sparkles,
                               color: widget.isOnline
                                   ? theme.colorScheme.primary
-                                  : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                  : theme.colorScheme.onSurfaceVariant
+                                        .withValues(alpha: 0.5),
                             ),
                       label: Text(
                         widget.isGeneratingSuggestions
@@ -393,13 +409,18 @@ class _AddPlantFormState extends State<AddPlantForm> {
                         style: TextStyle(
                           color: widget.isOnline
                               ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                              : theme.colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.5,
+                                ),
                         ),
                       ),
                       style: TextButton.styleFrom(
                         backgroundColor: widget.isOnline
-                            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-                            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                            ? theme.colorScheme.primaryContainer.withValues(
+                                alpha: 0.3,
+                              )
+                            : theme.colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.5),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -429,7 +450,7 @@ class _AddPlantFormState extends State<AddPlantForm> {
                   ),
                 ],
                 const SizedBox(height: 24),
-                
+
                 _ScheduleCounterField(
                   controller: widget.wateringScheduleController,
                   label: 'Watering',
@@ -437,7 +458,7 @@ class _AddPlantFormState extends State<AddPlantForm> {
                   icon: LucideIcons.droplets,
                   isRequired: true,
                 ),
-                
+
                 Theme(
                   data: theme.copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
@@ -470,7 +491,7 @@ class _AddPlantFormState extends State<AddPlantForm> {
                     ],
                   ),
                 ),
-                
+
                 if (widget.aiSuggestionsApplied) ...[
                   const SizedBox(height: 16),
                   Row(
@@ -493,16 +514,20 @@ class _AddPlantFormState extends State<AddPlantForm> {
                     ],
                   ),
                 ],
-                
+
                 if (widget.aiReasoning?.isNotEmpty == true) ...[
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+                      color: theme.colorScheme.secondaryContainer.withValues(
+                        alpha: 0.5,
+                      ),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: theme.colorScheme.secondary.withValues(alpha: 0.3),
+                        color: theme.colorScheme.secondary.withValues(
+                          alpha: 0.3,
+                        ),
                       ),
                     ),
                     child: Row(
@@ -515,7 +540,9 @@ class _AddPlantFormState extends State<AddPlantForm> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.secondary.withValues(alpha: 0.3),
+                                color: theme.colorScheme.secondary.withValues(
+                                  alpha: 0.3,
+                                ),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -543,7 +570,8 @@ class _AddPlantFormState extends State<AddPlantForm> {
                               Text(
                                 widget.aiReasoning!,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSecondaryContainer.withValues(alpha: 0.9),
+                                  color: theme.colorScheme.onSecondaryContainer
+                                      .withValues(alpha: 0.9),
                                   height: 1.5,
                                 ),
                               ),
@@ -567,12 +595,18 @@ class _AddPlantFormState extends State<AddPlantForm> {
                 GestureDetector(
                   onTap: widget.onSelectDate,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.3,
+                        ),
                       ),
                     ),
                     child: Row(
@@ -580,7 +614,9 @@ class _AddPlantFormState extends State<AddPlantForm> {
                         Icon(
                           LucideIcons.calendar,
                           size: 20,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -608,7 +644,9 @@ class _AddPlantFormState extends State<AddPlantForm> {
                         Icon(
                           LucideIcons.chevronRight,
                           size: 16,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ],
                     ),
@@ -688,7 +726,9 @@ class _ScheduleCounterFieldState extends State<_ScheduleCounterField> {
   void _decrement() {
     if (_value > 0) {
       final newValue = _value - 1;
-      widget.controller.text = newValue == 0 && !widget.isRequired ? '' : newValue.toString();
+      widget.controller.text = newValue == 0 && !widget.isRequired
+          ? ''
+          : newValue.toString();
     }
   }
 
@@ -716,7 +756,11 @@ class _ScheduleCounterFieldState extends State<_ScheduleCounterField> {
               color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(widget.icon, color: theme.colorScheme.primary, size: 20),
+            child: Icon(
+              widget.icon,
+              color: theme.colorScheme.primary,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -760,11 +804,16 @@ class _ScheduleCounterFieldState extends State<_ScheduleCounterField> {
               children: [
                 IconButton(
                   icon: const Icon(LucideIcons.minus, size: 16),
-                  onPressed: _value > (widget.isRequired ? 1 : 0) ? _decrement : null,
+                  onPressed: _value > (widget.isRequired ? 1 : 0)
+                      ? _decrement
+                      : null,
                   color: theme.colorScheme.primary,
                   padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
                 ),
                 SizedBox(
                   width: 32,
@@ -783,7 +832,10 @@ class _ScheduleCounterFieldState extends State<_ScheduleCounterField> {
                   color: theme.colorScheme.primary,
                   padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
                 ),
               ],
             ),

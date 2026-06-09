@@ -22,10 +22,7 @@ class DiagnosisSectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withValues(alpha: 0.18),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.18), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,7 +32,9 @@ class DiagnosisSectionCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: bg,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(15),
+              ),
             ),
             child: Row(
               children: [
@@ -54,10 +53,7 @@ class DiagnosisSectionCard extends StatelessWidget {
             ),
           ),
           // Body
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: child,
-          ),
+          Padding(padding: const EdgeInsets.all(14), child: child),
         ],
       ),
     );

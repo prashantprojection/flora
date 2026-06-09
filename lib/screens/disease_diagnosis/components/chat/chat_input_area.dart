@@ -25,7 +25,7 @@ class ChatInputArea extends StatelessWidget {
             color: Colors.black.withValues(alpha: 0.05),
             offset: const Offset(0, -4),
             blurRadius: 10,
-          )
+          ),
         ],
       ),
       child: SafeArea(
@@ -42,7 +42,10 @@ class ChatInputArea extends StatelessWidget {
                   ),
                   filled: true,
                   fillColor: AppTheme.muted,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
                 ),
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => onSubmitted(),
@@ -55,7 +58,11 @@ class ChatInputArea extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: const Icon(LucideIcons.send, color: Colors.white, size: 20),
+                icon: const Icon(
+                  LucideIcons.send,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: isLoading ? null : onSubmitted,
               ),
             ),

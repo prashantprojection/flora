@@ -78,19 +78,20 @@ class DiagnosisSessionState {
     bool clearPendingAttachment = false,
   }) {
     return DiagnosisSessionState(
-      selectedImage:
-          clearSelectedImage ? null : (selectedImage ?? this.selectedImage),
+      selectedImage: clearSelectedImage
+          ? null
+          : (selectedImage ?? this.selectedImage),
       chatHistory: chatHistory ?? this.chatHistory,
       isLoading: isLoading ?? this.isLoading,
-      loadingMessage:
-          clearLoadingMessage ? null : (loadingMessage ?? this.loadingMessage),
+      loadingMessage: clearLoadingMessage
+          ? null
+          : (loadingMessage ?? this.loadingMessage),
       currentRecordId: clearCurrentRecordId
           ? null
           : (currentRecordId ?? this.currentRecordId),
       isSpeaking: isSpeaking ?? this.isSpeaking,
       error: clearError ? null : (error ?? this.error),
-      description:
-          clearDescription ? null : (description ?? this.description),
+      description: clearDescription ? null : (description ?? this.description),
       diagnosisResult: clearDiagnosisResult
           ? null
           : (diagnosisResult ?? this.diagnosisResult),
@@ -118,7 +119,12 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
   bool _ttsInitialized = false;
 
   @override
-  DiagnosisSessionState build() => const DiagnosisSessionState();
+  DiagnosisSessionState build() {
+    ref.onDispose(() {
+      _chatSaveTimer?.cancel();
+    });
+    return const DiagnosisSessionState();
+  }
 
   // ── Image picking ──────────────────────────────────────────────────────────
 
@@ -127,7 +133,9 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
     state = state.copyWith(isSpeaking: false, clearError: true);
 
     try {
-      final XFile? pickedFile = await ImageService.pickImage(fromCamera: fromCamera);
+      final XFile? pickedFile = await ImageService.pickImage(
+        fromCamera: fromCamera,
+      );
       if (pickedFile != null) {
         state = state.copyWith(
           selectedImage: pickedFile,
@@ -168,6 +176,9 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
 
   void resetState() {
     ref.read(ttsServiceProvider).stop();
+    // Reset the TTS flag so fresh callbacks are bound on the next session.
+    _ttsInitialized = false;
+    _chatSaveTimer?.cancel();
     state = const DiagnosisSessionState();
   }
 
@@ -177,17 +188,21 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
   /// DiagnosisData is reconstructed synchronously (fast JSON parse).
   /// Chat history (if any) is loaded off the main thread via [compute].
   Future<void> viewRecord(DiagnosisRecord record) async {
+    final loadingForId = record.id;
     // Synchronous — show result immediately
-    final diagnosisData = DiagnosisData.fromString(record.diagnosis);
-    
+    final diagnosisData = DiagnosisData.tryParse(record.diagnosis);
+
     // On web, checking existsSync will crash, so we just blindly create the XFile.
     // If it's a blob url it will render
-    final imageFile = kIsWeb ? XFile(record.imagePath) : (File(record.imagePath).existsSync() ? XFile(record.imagePath) : null);
+    final imageFile = kIsWeb
+        ? XFile(record.imagePath)
+        : (File(record.imagePath).existsSync()
+              ? XFile(record.imagePath)
+              : null);
 
     state = state.copyWith(
       selectedImage: imageFile,
-      diagnosisResult:
-          diagnosisData.diseaseName != 'Error' ? diagnosisData : null,
+      diagnosisResult: diagnosisData,
       currentRecordId: record.id,
       clearDescription: true,
       clearError: true,
@@ -197,7 +212,8 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
       chatHistory: [
         LlmMessage(
           role: LlmRole.user,
-          text: 'Plant image analysis from ${record.date.toString().substring(0, 10)}',
+          text:
+              'Plant image analysis from ${record.date.toString().substring(0, 10)}',
         ),
         LlmMessage(role: LlmRole.model, text: record.diagnosis),
       ],
@@ -205,21 +221,22 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
 
     // Async — load follow-up chat history off the main thread if it exists
     if (record.chatMessages != null && record.chatMessages!.isNotEmpty) {
-      final persisted = await compute(
-        _parseChatMessages,
-        record.chatMessages!,
-      );
-      final followUps = persisted.map((m) => LlmMessage(
-            role: m.role == 'user' ? LlmRole.user : LlmRole.model,
-            text: m.text,
-            contextSummary: m.contextSummary,
-            // imagePath will be loaded lazily in the UI — we don't load bytes here
-          )).toList();
+      final persisted = await compute(_parseChatMessages, record.chatMessages!);
+      final followUps = persisted
+          .map(
+            (m) => LlmMessage(
+              role: m.role == 'user' ? LlmRole.user : LlmRole.model,
+              text: m.text,
+              contextSummary: m.contextSummary,
+              imagePath: m.imagePath,
+            ),
+          )
+          .toList();
+
+      if (state.currentRecordId != loadingForId) return;
 
       // Append to the synthetic history we set above
-      state = state.copyWith(
-        chatHistory: [...state.chatHistory, ...followUps],
-      );
+      state = state.copyWith(chatHistory: [...state.chatHistory, ...followUps]);
     }
   }
 
@@ -254,8 +271,9 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
   Future<bool> _validatePlantImage() async {
     state = state.copyWith(loadingMessage: 'Analyzing plant...');
     try {
-      final isPlant =
-          await _classifierService.isPlant(state.selectedImage!.path);
+      final isPlant = await _classifierService.isPlant(
+        state.selectedImage!.path,
+      );
       if (!isPlant) {
         state = state.copyWith(
           isLoading: false,
@@ -272,6 +290,16 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
       );
       return false;
     }
+  }
+
+  String _stripMarkdownFences(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.startsWith('```')) {
+      final start = trimmed.indexOf('\n') + 1;
+      final end = trimmed.lastIndexOf('```');
+      if (end > start) return trimmed.substring(start, end).trim();
+    }
+    return trimmed;
   }
 
   Future<void> _fetchAiDiagnosis() async {
@@ -293,18 +321,22 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
 
       state = state.copyWith(chatHistory: [userMessage]);
 
-      final aiResponse =
-          await aiService.processDiseaseDiagnosisChat(state.chatHistory);
+      final aiResponse = await aiService.processDiseaseDiagnosisChat(
+        state.chatHistory,
+      );
+
+      debugPrint('[Diagnosis] Raw AI response: $aiResponse');
+      final cleanJson = _stripMarkdownFences(aiResponse);
 
       // Parse the GenUI JSON into DiagnosisData — stored in state (no bytes)
-      final diagnosisData = DiagnosisData.fromString(aiResponse);
-      final hasValidResult = diagnosisData.diseaseName != 'Error';
+      final diagnosisData = DiagnosisData.tryParse(cleanJson);
+      final hasValidResult = diagnosisData != null;
 
       final aiMessage = LlmMessage(role: LlmRole.model, text: aiResponse);
 
       state = state.copyWith(
         chatHistory: [...state.chatHistory, aiMessage],
-        diagnosisResult: hasValidResult ? diagnosisData : null,
+        diagnosisResult: diagnosisData,
         isLoading: false,
         clearLoadingMessage: true,
       );
@@ -317,38 +349,50 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
       ];
       state = state.copyWith(chatHistory: historyWithoutBytes);
 
-      await _saveToHistory(aiResponse);
+      if (hasValidResult) {
+        await _saveToHistory(aiResponse);
+      } else {
+        state = state.copyWith(
+          error: 'Could not parse the diagnosis result. Please try again.',
+        );
+      }
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         clearLoadingMessage: true,
-        error: e is AppException ? e.message : 'Diagnosis failed. Please try again.',
+        error: e is AppException
+            ? e.message
+            : 'Diagnosis failed. Please try again.',
       );
     }
   }
 
   Future<void> _saveToHistory(String aiResponse) async {
-    final recordId = const Uuid().v4();
-    final permanentPath = await ImageService.saveImagePermanently(
-      state.selectedImage!.path,
-      prefix: 'diag',
-    );
+    try {
+      final recordId = const Uuid().v4();
+      final permanentPath = await ImageService.saveImagePermanently(
+        state.selectedImage!.path,
+        prefix: 'diag',
+      );
 
-    // Update state to use permanent path to prevent broken image references during the active session
-    state = state.copyWith(
-      selectedImage: XFile(permanentPath),
-      clearSelectedImage: false,
-    );
+      // Update state to use permanent path to prevent broken image references during the active session
+      state = state.copyWith(
+        selectedImage: XFile(permanentPath),
+        clearSelectedImage: false,
+      );
 
-    final record = DiagnosisRecord(
-      id: recordId,
-      imagePath: permanentPath,
-      diagnosis: aiResponse,
-      date: DateTime.now(),
-    );
+      final record = DiagnosisRecord(
+        id: recordId,
+        imagePath: permanentPath,
+        diagnosis: aiResponse,
+        date: DateTime.now(),
+      );
 
-    await ref.read(diagnosisHistoryProvider.notifier).addDiagnosis(record);
-    state = state.copyWith(currentRecordId: recordId);
+      await ref.read(diagnosisHistoryProvider.notifier).addDiagnosis(record);
+      state = state.copyWith(currentRecordId: recordId);
+    } catch (e) {
+      debugPrint('[Diagnosis] Failed to save history: $e');
+    }
   }
 
   // ── Follow-up chat ─────────────────────────────────────────────────────────
@@ -394,8 +438,7 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
 
     try {
       final aiService = ref.read(aiServiceProvider);
-      final aiResult =
-          await aiService.processFollowUpChat(state.chatHistory);
+      final aiResult = await aiService.processFollowUpChat(state.chatHistory);
 
       // Free the attachment bytes from the sent message
       // (replace with a no-bytes version that keeps the imagePath for UI display)
@@ -404,14 +447,18 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
         LlmMessage(
           role: LlmRole.user,
           text: text,
-          contextSummary: text, // The user's prompt serves as its own summary
+          contextSummary: text.length > 200 ? '${text.substring(0, 200)}...' : text, // The user's prompt serves as its own summary
+          imagePath: attachment?.path,
         ),
       ];
 
       final aiMessage = LlmMessage(
-        role: LlmRole.model, 
-        text: aiResult.isWidget ? jsonEncode(aiResult.functionCall!.arguments) : (aiResult.text ?? ''),
-        contextSummary: aiResult.text, // The LLM's plain text serves as its summary
+        role: LlmRole.model,
+        text: aiResult.isWidget
+            ? jsonEncode(aiResult.functionCall!.arguments)
+            : (aiResult.text ?? ''),
+        contextSummary:
+            aiResult.text, // The LLM's plain text serves as its summary
       );
       state = state.copyWith(
         chatHistory: [...historyWithoutBytes, aiMessage],
@@ -425,7 +472,9 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
       state = state.copyWith(
         isLoading: false,
         clearLoadingMessage: true,
-        error: e is AppException ? e.message : 'Failed to get response. Please try again.',
+        error: e is AppException
+            ? e.message
+            : 'Failed to get response. Please try again.',
       );
     }
   }
@@ -434,10 +483,12 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
   void _trimHistoryIfNeeded() {
     final followUps = state.followUpHistory;
     if (followUps.length >= _maxFollowUpPairs * 2) {
+      const kInitialMessages = 2;
+      const kTrimCount = 10;
       // Remove oldest 10 follow-up messages (5 pairs) to make room
       final trimmed = [
-        ...state.chatHistory.sublist(0, 2), // keep initial diagnosis pair
-        ...state.chatHistory.sublist(12),   // skip oldest 5 follow-up pairs
+        ...state.chatHistory.sublist(0, kInitialMessages), // keep initial diagnosis pair
+        ...state.chatHistory.sublist(kInitialMessages + kTrimCount), // skip oldest 5 follow-up pairs
       ];
       state = state.copyWith(chatHistory: trimmed);
     }
@@ -457,16 +508,19 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
     for (int i = 0; i < followUps.length; i++) {
       final msg = followUps[i];
       // For the last user message, attach the image path if one was sent
+      // length - 2 is intentionally the last user message (model response is at length - 1)
       final isLastUserMsg =
           i == followUps.length - 2 && msg.role == LlmRole.user;
-      persisted.add(PersistedChatMessage(
-        id: const Uuid().v4(),
-        role: msg.role == LlmRole.user ? 'user' : 'model',
-        text: msg.text,
-        timestamp: DateTime.now(),
-        contextSummary: msg.contextSummary,
-        imagePath: isLastUserMsg ? lastAttachmentPath : null,
-      ));
+      persisted.add(
+        PersistedChatMessage(
+          id: const Uuid().v4(),
+          role: msg.role == LlmRole.user ? 'user' : 'model',
+          text: msg.text,
+          timestamp: DateTime.now(),
+          contextSummary: msg.contextSummary,
+          imagePath: isLastUserMsg ? lastAttachmentPath : null,
+        ),
+      );
     }
 
     final chatJson = PersistedChatMessage.encodeList(persisted);
@@ -508,13 +562,53 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
         orElse: () => const LlmMessage(role: LlmRole.model, text: ''),
       );
 
-      final cleanText = lastMsg.text
-          .replaceAll('**', '')
-          .replaceAll('#', '')
-          .replaceAll('*', '');
+      final isInitialDiagnosis = state.diagnosisResult != null && 
+          state.chatHistory.length <= 2;
 
-      await ttsService.speak(cleanText);
+      final textToSpeak = isInitialDiagnosis
+          ? _buildReadableText(state.diagnosisResult!)
+          : _sanitizeForSpeech(lastMsg.text);
+
+      await ttsService.speak(textToSpeak);
     }
+  }
+
+  static final _parenthesesRegex = RegExp(r'\(.*?\)');
+  static final _markdownRegex = RegExp(r'[*#`]+');
+  static final _numberedListRegex = RegExp(r'^\s*\d+\.\s*', multiLine: true);
+  static final _bulletPointRegex = RegExp(r'^\s*[-•]\s*', multiLine: true);
+  static final _whitespaceRegex = RegExp(r'\s+');
+
+  String _sanitizeForSpeech(String text) {
+    return text
+        .replaceAll(_parenthesesRegex, '') // remove parenthesized content
+        .replaceAll(_markdownRegex, '') // remove markdown
+        .replaceAll(_numberedListRegex, '') // remove numbered list prefixes
+        .replaceAll(_bulletPointRegex, '') // remove bullet points
+        .replaceAll(_whitespaceRegex, ' ') // collapse whitespace
+        .trim();
+  }
+
+  String _buildReadableText(DiagnosisData data) {
+    if (data.severity.toLowerCase() == 'none') {
+      return 'Your plant appears to be healthy.';
+    }
+    final buffer = StringBuffer();
+    buffer.writeln('Diagnosis complete. The plant appears to have ${_sanitizeForSpeech(data.diseaseName)}.');
+    buffer.writeln('The severity is ${_sanitizeForSpeech(data.severity)}.');
+    if (data.symptoms.isNotEmpty) {
+      buffer.writeln('Symptoms include ${_sanitizeForSpeech(data.symptoms.join(", "))}.');
+    }
+    if (data.causes.isNotEmpty) {
+      buffer.writeln('Potential causes are ${_sanitizeForSpeech(data.causes.join(", "))}.');
+    }
+    if (data.treatment.isNotEmpty) {
+      buffer.writeln('Recommended treatments include: ${_sanitizeForSpeech(data.treatment.join(", "))}.');
+    }
+    if (data.prevention.isNotEmpty) {
+      buffer.writeln('To prevent this in the future: ${_sanitizeForSpeech(data.prevention.join(", "))}.');
+    }
+    return buffer.toString();
   }
 
   // ── Feedback ──────────────────────────────────────────────────────────────
@@ -531,9 +625,9 @@ class DiagnosisSessionNotifier extends Notifier<DiagnosisSessionState> {
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 final diagnosisSessionProvider =
-    NotifierProvider<DiagnosisSessionNotifier, DiagnosisSessionState>(() {
-  return DiagnosisSessionNotifier();
-});
+    NotifierProvider<DiagnosisSessionNotifier, DiagnosisSessionState>(
+  DiagnosisSessionNotifier.new,
+);
 
 // ── Isolate helper (top-level for compute) ────────────────────────────────────
 

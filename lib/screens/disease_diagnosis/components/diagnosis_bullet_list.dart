@@ -5,7 +5,11 @@ class DiagnosisBulletList extends StatelessWidget {
   final List<String> items;
   final Color color;
 
-  const DiagnosisBulletList({super.key, required this.items, required this.color});
+  const DiagnosisBulletList({
+    super.key,
+    required this.items,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -15,10 +15,11 @@ class GrowthTimeline extends StatelessWidget {
     final theme = Theme.of(context);
 
     // Extract all care history events that have photos
-    final photoEvents = plant.careHistory
-        .where((e) => e.photoUrl != null && e.photoUrl!.isNotEmpty)
-        .toList()
-      ..sort((a, b) => a.date.compareTo(b.date)); // Oldest to newest
+    final photoEvents =
+        plant.careHistory
+            .where((e) => e.photoUrl != null && e.photoUrl!.isNotEmpty)
+            .toList()
+          ..sort((a, b) => a.date.compareTo(b.date)); // Oldest to newest
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,7 +153,10 @@ class GrowthTimeline extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -193,7 +197,11 @@ class GrowthTimeline extends StatelessWidget {
     );
   }
 
-  Widget _buildBeforeAfterImage(BuildContext context, String path, String label) {
+  Widget _buildBeforeAfterImage(
+    BuildContext context,
+    String path,
+    String label,
+  ) {
     final theme = Theme.of(context);
     final file = File(path);
 
@@ -207,11 +215,7 @@ class GrowthTimeline extends StatelessWidget {
             child: GestureDetector(
               onTap: () => _openFullScreenImage(context, path, label),
               child: file.existsSync()
-                  ? buildImage(
-                      file.path,
-                      fit: BoxFit.cover,
-                      cacheWidth: 400,
-                    )
+                  ? buildImage(file.path, fit: BoxFit.cover, cacheWidth: 400)
                   : Container(
                       color: theme.colorScheme.surfaceContainerHighest,
                       child: const Icon(LucideIcons.imageOff),
@@ -330,7 +334,9 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
     final file = File(widget.path);
 
     return Scaffold(
-      backgroundColor: Colors.black.withValues(alpha: 1.0 - (_dragOffset.abs() / 300).clamp(0.0, 0.7)),
+      backgroundColor: Colors.black.withValues(
+        alpha: 1.0 - (_dragOffset.abs() / 300).clamp(0.0, 0.7),
+      ),
       body: GestureDetector(
         onVerticalDragUpdate: (details) {
           setState(() {
@@ -338,7 +344,8 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
           });
         },
         onVerticalDragEnd: (details) {
-          if (_dragOffset.abs() > 100 || (details.primaryVelocity ?? 0.0).abs() > 300) {
+          if (_dragOffset.abs() > 100 ||
+              (details.primaryVelocity ?? 0.0).abs() > 300) {
             Navigator.of(context).pop();
           } else {
             setState(() {
@@ -356,10 +363,7 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                 child: Hero(
                   tag: widget.path,
                   child: file.existsSync()
-                      ? buildImage(
-                          file.path,
-                          fit: BoxFit.contain,
-                        )
+                      ? buildImage(file.path, fit: BoxFit.contain)
                       : const Icon(
                           LucideIcons.imageOff,
                           color: Colors.white60,
@@ -382,11 +386,17 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                     end: Alignment.bottomCenter,
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 48,
+                ),
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(LucideIcons.chevronLeft, color: Colors.white),
+                      icon: const Icon(
+                        LucideIcons.chevronLeft,
+                        color: Colors.white,
+                      ),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                     const SizedBox(width: 8),

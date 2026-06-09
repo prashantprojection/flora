@@ -30,8 +30,9 @@ class HomeEmptyState extends StatelessWidget {
                   errorBuilder: (_, _, _) => Container(
                     padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer
-                          .withValues(alpha: 0.3),
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: 0.3,
+                      ),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -78,7 +79,10 @@ class HomeEmptyState extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
               ),

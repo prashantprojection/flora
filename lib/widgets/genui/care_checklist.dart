@@ -25,9 +25,8 @@ class _CareChecklistState extends State<CareChecklist> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final title = widget.data['title'] as String? ?? 'Care Plan';
-    final steps = (widget.data['steps'] as List?)
-            ?.map((e) => e.toString())
-            .toList() ??
+    final steps =
+        (widget.data['steps'] as List?)?.map((e) => e.toString()).toList() ??
         [];
 
     final completedCount = _checked.where((c) => c).length;
@@ -77,8 +76,7 @@ class _CareChecklistState extends State<CareChecklist> {
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: progress,
-                  backgroundColor:
-                      theme.colorScheme.surfaceContainerHighest,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   color: AppTheme.primary,
                   minHeight: 4,
                 ),
@@ -110,8 +108,11 @@ class _CareChecklistState extends State<CareChecklist> {
                             ),
                           ),
                           child: _checked[i]
-                              ? const Icon(Icons.check,
-                                  size: 13, color: Colors.white)
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 13,
+                                  color: Colors.white,
+                                )
                               : null,
                         ),
                         const SizedBox(width: 10),

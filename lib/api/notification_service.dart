@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:flora/models/plant.dart';
 import 'package:flora/models/care_event.dart';
+
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -83,7 +84,7 @@ class NotificationService {
       plant.nextWatering.day,
       9, // 9 AM
     );
-    
+
     if (scheduledDate.isBefore(now)) {
       scheduledDate = now.add(const Duration(minutes: 1));
     }
@@ -132,9 +133,11 @@ class NotificationService {
       await scheduleDailyReminder();
       return;
     }
-    
+
     for (final plant in plants) {
-      if (plant.status == PlantStatus.active || plant.status == PlantStatus.quarantine || plant.status == null) {
+      if (plant.status == PlantStatus.active ||
+          plant.status == PlantStatus.quarantine ||
+          plant.status == null) {
         await schedulePlantNotification(plant);
       }
     }

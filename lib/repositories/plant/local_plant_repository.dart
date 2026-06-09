@@ -14,13 +14,13 @@ class LocalPlantRepository implements PlantRepository {
     final prefs = await SharedPreferences.getInstance();
     final String? plantsJson = prefs.getString(_plantsKey);
     if (plantsJson == null || plantsJson.isEmpty) return [];
-    return compute(_parsePlants, plantsJson);
+    return _parsePlants(plantsJson);
   }
 
   @override
   Future<void> savePlants(List<Plant> plants) async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonStr = await compute(_encodePlants, plants);
+    final jsonStr = _encodePlants(plants);
     await prefs.setString(_plantsKey, jsonStr);
   }
 }

@@ -48,7 +48,7 @@ class PersistedChatMessage {
       id: json['id'] as String? ?? const Uuid().v4(), // Fallback for old data
       role: json['role'] as String,
       text: json['text'] as String,
-      timestamp: json['timestamp'] != null 
+      timestamp: json['timestamp'] != null
           ? DateTime.parse(json['timestamp'] as String)
           : DateTime.now(), // Fallback for old data
       contextSummary: json['contextSummary'] as String?,

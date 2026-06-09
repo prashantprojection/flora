@@ -41,25 +41,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     OnboardingSlideData(
       title: 'Everything you need',
-      subtitle: 'AI Care Schedules, Light Meters, and Disease Diagnosis — all without subscriptions or paywalls.',
+      subtitle:
+          'AI Care Schedules, Light Meters, and Disease Diagnosis — all without subscriptions or paywalls.',
       image: AppAssets.onboardingSlide2,
       color: const Color(0xFFFFFBEA),
       isDark: false,
     ),
     OnboardingSlideData(
       title: 'Flo AI care',
-      subtitle: 'Flo AI creates personalised care schedules tailored to your plant and local climate.',
+      subtitle:
+          'Flo AI creates personalised care schedules tailored to your plant and local climate.',
       image: AppAssets.onboardingSlide3,
       color: const Color(0xFFEAF4FF),
       isDark: false,
     ),
     OnboardingSlideData(
       title: 'Your data stays with you',
-      subtitle: 'Plants and photos are stored locally. No accounts, no cloud uploads.',
+      subtitle:
+          'Plants and photos are stored locally. No accounts, no cloud uploads.',
       image: AppAssets.onboardingSlide4,
       color: const Color(0xFF2E4A3A),
       isDark: true,
-    )
+    ),
   ];
 
   @override
@@ -91,7 +94,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final theme = Theme.of(context);
     final currentSlide = _slides[_currentPage];
     final isDark = currentSlide.isDark;
-    final subtitleColor = isDark ? Colors.white70 : theme.colorScheme.onSurfaceVariant;
+    final subtitleColor = isDark
+        ? Colors.white70
+        : theme.colorScheme.onSurfaceVariant;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 500),
@@ -123,12 +128,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     });
                   },
                   itemCount: _slides.length,
-                    itemBuilder: (context, index) {
-                      final slide = _slides[index];
-                      final slideIsDark = slide.isDark;
-                      final slideTextColor = slideIsDark ? Colors.white : theme.colorScheme.onSurface;
-                      final slideSubtitleColor = slideIsDark ? Colors.white70 : theme.colorScheme.onSurfaceVariant;
-                    
+                  itemBuilder: (context, index) {
+                    final slide = _slides[index];
+                    final slideIsDark = slide.isDark;
+                    final slideTextColor = slideIsDark
+                        ? Colors.white
+                        : theme.colorScheme.onSurface;
+                    final slideSubtitleColor = slideIsDark
+                        ? Colors.white70
+                        : theme.colorScheme.onSurfaceVariant;
+
                     return Padding(
                       padding: const EdgeInsets.all(24.0),
                       child: Column(
@@ -185,8 +194,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           width: _currentPage == index ? 24 : 8,
                           decoration: BoxDecoration(
                             color: _currentPage == index
-                                ? (isDark ? Colors.white : theme.colorScheme.primary)
-                                : (isDark ? Colors.white38 : theme.colorScheme.primaryContainer),
+                                ? (isDark
+                                      ? Colors.white
+                                      : theme.colorScheme.primary)
+                                : (isDark
+                                      ? Colors.white38
+                                      : theme.colorScheme.primaryContainer),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -194,8 +207,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     FloatingActionButton(
                       onPressed: _nextPage,
-                      backgroundColor: isDark ? Colors.white : theme.colorScheme.primary,
-                      foregroundColor: isDark ? Colors.black : theme.colorScheme.onPrimary,
+                      backgroundColor: isDark
+                          ? Colors.white
+                          : theme.colorScheme.primary,
+                      foregroundColor: isDark
+                          ? Colors.black
+                          : theme.colorScheme.onPrimary,
                       elevation: 0,
                       child: Icon(
                         _currentPage == _slides.length - 1

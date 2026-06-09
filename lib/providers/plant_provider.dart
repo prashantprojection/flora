@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flora/api/notification_service.dart';
@@ -17,13 +18,25 @@ final plantRepositoryProvider = Provider<PlantRepository>((ref) {
 
 // ── Plant List Notifier ───────────────────────────────────────────────────────
 
-class PlantListNotifier extends Notifier<List<Plant>> {
+class PlantListNotifier extends Notifier<List<Plant>> with WidgetsBindingObserver {
   PlantRepository get _repository => ref.read(plantRepositoryProvider);
 
   @override
   List<Plant> build() {
+    WidgetsBinding.instance.addObserver(this);
+    ref.onDispose(() => WidgetsBinding.instance.removeObserver(this));
     _loadPlants();
     return [];
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      if (_saveTimer != null && _saveTimer!.isActive) {
+        _saveTimer!.cancel();
+        _repository.savePlants(this.state);
+      }
+    }
   }
 
   Future<void> _loadPlants() async {
@@ -52,9 +65,13 @@ class PlantListNotifier extends Notifier<List<Plant>> {
         if (plant.id == plantId) _handleCareEvent(plant, event) else plant,
     ];
     _savePlants();
-    final updatedPlant =
-        state.firstWhere((p) => p.id == plantId, orElse: () => state.first);
-    ref.read(notificationServiceProvider).schedulePlantNotification(updatedPlant);
+    final updatedPlant = state.firstWhere(
+      (p) => p.id == plantId,
+      orElse: () => state.first,
+    );
+    ref
+        .read(notificationServiceProvider)
+        .schedulePlantNotification(updatedPlant);
   }
 
   Plant _handleCareEvent(Plant plant, CareEvent event) {
@@ -72,8 +89,9 @@ class PlantListNotifier extends Notifier<List<Plant>> {
         event.type == CareType.snoozed) {
       return updatedPlant;
     } else {
-      final scheduleIndex = updatedPlant.careSchedules
-          .indexWhere((s) => s.type == event.type);
+      final scheduleIndex = updatedPlant.careSchedules.indexWhere(
+        (s) => s.type == event.type,
+      );
       if (scheduleIndex != -1) {
         final schedule = updatedPlant.careSchedules[scheduleIndex];
         final nextDate = event.date.add(Duration(days: schedule.frequency));
@@ -81,7 +99,9 @@ class PlantListNotifier extends Notifier<List<Plant>> {
           lastDate: event.date,
           nextDate: nextDate,
         );
-        final newSchedules = List<CareSchedule>.from(updatedPlant.careSchedules);
+        final newSchedules = List<CareSchedule>.from(
+          updatedPlant.careSchedules,
+        );
         newSchedules[scheduleIndex] = newSchedule;
         return updatedPlant.copyWith(careSchedules: newSchedules);
       }
@@ -127,18 +147,19 @@ class PlantListNotifier extends Notifier<List<Plant>> {
     final today = DateTime(now.year, now.month, now.day);
 
     if (type == CareType.watering) {
-      final baseDate =
-          plant.nextWatering.isBefore(today) ? today : plant.nextWatering;
-      return plant.copyWith(
-        nextWatering: baseDate.add(Duration(days: days)),
-      );
+      final baseDate = plant.nextWatering.isBefore(today)
+          ? today
+          : plant.nextWatering;
+      return plant.copyWith(nextWatering: baseDate.add(Duration(days: days)));
     } else {
-      final scheduleIndex =
-          plant.careSchedules.indexWhere((s) => s.type == type);
+      final scheduleIndex = plant.careSchedules.indexWhere(
+        (s) => s.type == type,
+      );
       if (scheduleIndex != -1) {
         final schedule = plant.careSchedules[scheduleIndex];
-        final baseDate =
-            schedule.nextDate.isBefore(today) ? today : schedule.nextDate;
+        final baseDate = schedule.nextDate.isBefore(today)
+            ? today
+            : schedule.nextDate;
         final newSchedule = schedule.copyWith(
           nextDate: baseDate.add(Duration(days: days)),
         );
@@ -159,12 +180,12 @@ class PlantListNotifier extends Notifier<List<Plant>> {
       final nextDate = DateTime.now().add(Duration(days: frequency));
       updatedPlant = plant.copyWith(nextWatering: nextDate);
     } else {
-      final scheduleIndex =
-          plant.careSchedules.indexWhere((s) => s.type == type);
+      final scheduleIndex = plant.careSchedules.indexWhere(
+        (s) => s.type == type,
+      );
       if (scheduleIndex != -1) {
         final schedule = plant.careSchedules[scheduleIndex];
-        final nextDate =
-            DateTime.now().add(Duration(days: schedule.frequency));
+        final nextDate = DateTime.now().add(Duration(days: schedule.frequency));
         final newSchedule = schedule.copyWith(nextDate: nextDate);
         final newSchedules = List<CareSchedule>.from(plant.careSchedules);
         newSchedules[scheduleIndex] = newSchedule;
@@ -237,10 +258,12 @@ final plantListProvider = NotifierProvider<PlantListNotifier, List<Plant>>(
 final activeGardenProvider = Provider<List<Plant>>((ref) {
   final plants = ref.watch(plantListProvider);
   return plants
-      .where((p) =>
-          p.status == PlantStatus.active ||
-          p.status == PlantStatus.quarantine ||
-          p.status == null)
+      .where(
+        (p) =>
+            p.status == PlantStatus.active ||
+            p.status == PlantStatus.quarantine ||
+            p.status == null,
+      )
       .toList();
 });
 

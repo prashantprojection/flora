@@ -18,14 +18,18 @@ class DiagnosisFeedbackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bgColor = isSelected 
-        ? theme.colorScheme.primary.withValues(alpha: 0.15) 
+    final bgColor = isSelected
+        ? theme.colorScheme.primary.withValues(alpha: 0.15)
         : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
-    final borderColor = isSelected 
-        ? theme.colorScheme.primary 
+    final borderColor = isSelected
+        ? theme.colorScheme.primary
         : theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
-    final iconColor = isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant;
-    final textColor = isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface;
+    final iconColor = isSelected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
+    final textColor = isSelected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface;
 
     return AnimatedPress(
       onTap: onTap,

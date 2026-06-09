@@ -30,12 +30,16 @@ class AddPlantImagePicker extends StatelessWidget {
             width: double.infinity,
             height: 200,
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.3,
+              ),
               borderRadius: BorderRadius.circular(24),
               border: hasImage
                   ? null
                   : Border.all(
-                      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                      color: theme.colorScheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
                       width: 2,
                     ),
               image: hasImage
@@ -43,8 +47,8 @@ class AddPlantImagePicker extends StatelessWidget {
                       image: selectedImageFile != null
                           ? getImageProvider(selectedImageFile!.path)
                           : (initialImageUrl!.startsWith('http')
-                              ? NetworkImage(initialImageUrl!)
-                              : getImageProvider(initialImageUrl!)),
+                                ? NetworkImage(initialImageUrl!)
+                                : getImageProvider(initialImageUrl!)),
                       fit: BoxFit.cover,
                     )
                   : null,
@@ -70,7 +74,11 @@ class AddPlantImagePicker extends StatelessWidget {
                             color: Colors.black.withValues(alpha: 0.6),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(LucideIcons.pencil, color: Colors.white, size: 18),
+                          child: const Icon(
+                            LucideIcons.pencil,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ],
@@ -81,7 +89,9 @@ class AddPlantImagePicker extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                          color: theme.colorScheme.primaryContainer.withValues(
+                            alpha: 0.5,
+                          ),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(

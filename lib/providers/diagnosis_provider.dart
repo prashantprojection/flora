@@ -53,5 +53,5 @@ class DiagnosisHistoryNotifier extends Notifier<List<DiagnosisRecord>> {
 
 final diagnosisHistoryProvider =
     NotifierProvider<DiagnosisHistoryNotifier, List<DiagnosisRecord>>(
-  DiagnosisHistoryNotifier.new,
-);
+      DiagnosisHistoryNotifier.new,
+    );

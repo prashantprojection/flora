@@ -73,7 +73,9 @@ class _TipCardState extends State<TipCard> {
                     if (urgency != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: urgencyColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),

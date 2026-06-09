@@ -51,21 +51,14 @@ class DiagnosisData {
     return jsonEncode(toJson());
   }
 
-  /// Master parser that assumes GenUI structured JSON
-  factory DiagnosisData.fromString(String rawData) {
+  /// Safely parses GenUI structured JSON. Returns null if parsing fails.
+  static DiagnosisData? tryParse(String rawData) {
     try {
       final json = jsonDecode(rawData);
       return DiagnosisData.fromJson(json);
     } catch (e) {
       debugPrint('[DiagnosisData] Parsing JSON failed: $e');
-      return const DiagnosisData(
-        diseaseName: 'Error',
-        severity: 'Unknown',
-        symptoms: [],
-        causes: [],
-        treatment: [],
-        prevention: [],
-      );
+      return null;
     }
   }
 }

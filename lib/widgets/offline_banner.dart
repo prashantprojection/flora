@@ -34,10 +34,7 @@ class _OfflineBannerState extends ConsumerState<OfflineBanner> {
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.amber.shade700,
-            Colors.amber.shade900,
-          ],
+          colors: [Colors.amber.shade700, Colors.amber.shade900],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -55,11 +52,7 @@ class _OfflineBannerState extends ConsumerState<OfflineBanner> {
         top: false,
         child: Row(
           children: [
-            const Icon(
-              LucideIcons.wifiOff,
-              color: Colors.white,
-              size: 18,
-            ),
+            const Icon(LucideIcons.wifiOff, color: Colors.white, size: 18),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

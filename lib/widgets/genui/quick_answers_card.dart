@@ -5,23 +5,18 @@ import 'package:flora/utils/app_theme.dart';
 /// Rendered when the AI calls [render_quick_answers].
 class QuickAnswersCard extends StatelessWidget {
   final Map<String, dynamic> data;
+
   /// Called when the user taps a suggestion chip — pre-fills the input bar.
   final ValueChanged<String>? onSuggestionTap;
 
-  const QuickAnswersCard({
-    super.key,
-    required this.data,
-    this.onSuggestionTap,
-  });
+  const QuickAnswersCard({super.key, required this.data, this.onSuggestionTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final answer = data['answer'] as String? ?? '';
-    final suggestions = (data['suggestions'] as List?)
-            ?.map((e) => e.toString())
-            .toList() ??
-        [];
+    final suggestions =
+        (data['suggestions'] as List?)?.map((e) => e.toString()).toList() ?? [];
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -65,28 +60,31 @@ class QuickAnswersCard extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 6,
                   children: suggestions
-                      .map((s) => GestureDetector(
-                            onTap: () => onSuggestionTap?.call(s),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primary.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color:
-                                      AppTheme.primary.withValues(alpha: 0.25),
-                                ),
-                              ),
-                              child: Text(
-                                s,
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: AppTheme.primary,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                      .map(
+                        (s) => GestureDetector(
+                          onTap: () => onSuggestionTap?.call(s),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppTheme.primary.withValues(alpha: 0.25),
                               ),
                             ),
-                          ))
+                            child: Text(
+                              s,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
                       .toList(),
                 ),
               ],

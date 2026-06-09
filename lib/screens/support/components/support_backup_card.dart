@@ -23,8 +23,9 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-            isError ? Colors.red : Theme.of(context).colorScheme.primary,
+        backgroundColor: isError
+            ? Colors.red
+            : Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -74,11 +75,10 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
       }
 
       final existingPlants = ref.read(plantListProvider);
-      final duplicateIds =
-          importedPlants
-              .map((ip) => ip.id)
-              .where((id) => existingPlants.any((ep) => ep.id == id))
-              .toList();
+      final duplicateIds = importedPlants
+          .map((ip) => ip.id)
+          .where((id) => existingPlants.any((ep) => ep.id == id))
+          .toList();
 
       if (duplicateIds.isNotEmpty) {
         _showDuplicateStrategyDialog(importedPlants, duplicateIds.length);
@@ -206,8 +206,9 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
       child: ExpansionTile(
         shape: const Border(),
         collapsedShape: const Border(),
-        backgroundColor:
-            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+        backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.1,
+        ),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -257,7 +258,9 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      border: Border.all(color: theme.colorScheme.outlineVariant),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Row(
@@ -297,8 +300,11 @@ class _SupportBackupCardState extends ConsumerState<SupportBackupCard> {
                             ),
                           )
                         else
-                          Icon(LucideIcons.folderOpen,
-                              size: 18, color: theme.colorScheme.onPrimary),
+                          Icon(
+                            LucideIcons.folderOpen,
+                            size: 18,
+                            color: theme.colorScheme.onPrimary,
+                          ),
                         const SizedBox(width: 8),
                         Text(
                           _isImporting ? 'Importing...' : 'Import',

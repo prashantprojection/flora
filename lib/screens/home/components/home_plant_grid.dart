@@ -9,27 +9,28 @@ class HomePlantGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (plants.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    if (plants.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverGrid(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: MediaQuery.of(context).size.width > 900
+          crossAxisCount: screenWidth > 900
               ? 4
-              : MediaQuery.of(context).size.width > 600
-                  ? 3
-                  : 2,
+              : screenWidth > 600
+              ? 3
+              : 2,
           childAspectRatio: 0.7, // Taller cards
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            return PlantCard(plant: plants[index]);
-          },
-          childCount: plants.length,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          return PlantCard(plant: plants[index]);
+        }, childCount: plants.length),
       ),
     );
   }

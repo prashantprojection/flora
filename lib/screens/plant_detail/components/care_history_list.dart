@@ -110,7 +110,8 @@ class CareHistoryList extends StatelessWidget {
                                   padding: const EdgeInsets.only(top: 8.0),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
-                                    child: buildImage(event.photoUrl!,
+                                    child: buildImage(
+                                      event.photoUrl!,
                                       height: 120,
                                       width: double.infinity,
                                       fit: BoxFit.cover,

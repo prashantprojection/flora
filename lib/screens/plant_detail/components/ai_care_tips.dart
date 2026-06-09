@@ -102,7 +102,9 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Could not generate tips. Please try again later.'),
+          content: const Text(
+            'Could not generate tips. Please try again later.',
+          ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -208,7 +210,8 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            widget.plant.location != null && widget.plant.location!.isNotEmpty
+                            widget.plant.location != null &&
+                                    widget.plant.location!.isNotEmpty
                                 ? 'Personalised for ${widget.plant.name} in ${widget.plant.location}'
                                 : 'Personalised for ${widget.plant.name}',
                             style: Theme.of(context).textTheme.bodySmall,
@@ -253,7 +256,9 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                       width: double.infinity,
                       child: FilledButton.icon(
                         onPressed:
-                            (!isOnline || _loading || _additionalDetailsController.text.isEmpty)
+                            (!isOnline ||
+                                _loading ||
+                                _additionalDetailsController.text.isEmpty)
                             ? null
                             : _handleGenerateTips,
                         icon: const Icon(
@@ -271,26 +276,26 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                       ),
                     ),
                   ),
-                  if (!isOnline) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          LucideIcons.wifiOff,
-                          size: 12,
+                if (!isOnline) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        LucideIcons.wifiOff,
+                        size: 12,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Flo AI unavailable offline',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Theme.of(context).colorScheme.error,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Flo AI unavailable offline',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
+                ],
 
                 // Show non-seasonal fallback tips if any
                 if (_careTips.isNotEmpty && seasonalTips.isEmpty) ...[
@@ -314,11 +319,10 @@ class _AICareTipsState extends ConsumerState<AICareTips> {
                     child: Text(
                       'Last updated: ${_formatRelativeTime(widget.plant.aiTipsGeneratedAt!)}',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant
-                                .withValues(alpha: 0.7),
-                          ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
                     ),
                   ),
                 ],

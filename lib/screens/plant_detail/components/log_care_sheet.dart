@@ -122,7 +122,9 @@ class _LogCareSheetState extends ConsumerState<LogCareSheet> {
       case CareType.skipped:
       case CareType.snoozed:
         return {
-          'icon': type == CareType.skipped ? LucideIcons.skipForward : LucideIcons.ban,
+          'icon': type == CareType.skipped
+              ? LucideIcons.skipForward
+              : LucideIcons.ban,
           'label': type == CareType.skipped ? 'Skipped' : 'Snoozed',
           'color': Colors.grey,
         };

@@ -27,12 +27,9 @@ class DiseaseDiagnosisScreen extends ConsumerWidget {
     ref.listen(diagnosisSessionProvider.select((s) => s.error), (prev, error) {
       if (error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: Colors.redAccent,
-          ),
+          SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
         );
-        notifier.clearError();
+        Future.microtask(() => notifier.clearError());
       }
     });
 
@@ -59,12 +56,8 @@ class DiseaseDiagnosisScreen extends ConsumerWidget {
     // No image — show selection screen + history bottom sheet
     return Stack(
       children: [
-        DiagnosisSelectionView(
-          onPickImage: notifier.pickImage,
-        ),
-        DiagnosisHistorySheet(
-          onViewRecord: notifier.viewRecord,
-        ),
+        DiagnosisSelectionView(onPickImage: notifier.pickImage),
+        DiagnosisHistorySheet(onViewRecord: notifier.viewRecord),
       ],
     );
   }

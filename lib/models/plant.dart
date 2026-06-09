@@ -94,8 +94,9 @@ class Plant {
       aiTipsGeneratedAt: clearAiTipsGeneratedAt
           ? null
           : (aiTipsGeneratedAt ?? this.aiTipsGeneratedAt),
-      aiTipsSource:
-          clearAiTipsSource ? null : (aiTipsSource ?? this.aiTipsSource),
+      aiTipsSource: clearAiTipsSource
+          ? null
+          : (aiTipsSource ?? this.aiTipsSource),
     );
   }
 

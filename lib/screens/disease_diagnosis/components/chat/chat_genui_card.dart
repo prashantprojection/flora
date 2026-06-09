@@ -14,18 +14,17 @@ import 'package:flora/screens/disease_diagnosis/components/diagnosis_bullet_list
 class ChatGenUiCard extends ConsumerWidget {
   final LlmMessage message;
 
-  const ChatGenUiCard({
-    super.key,
-    required this.message,
-  });
+  const ChatGenUiCard({super.key, required this.message});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
     // Parse GenUI JSON string if it's a valid DiagnosisData object
-    final data = message.text.contains('"diseaseName"') ? DiagnosisData.fromString(message.text) : null;
-    final isJson = data != null && data.diseaseName != 'Error';
+    final data = message.text.contains('"diseaseName"')
+        ? DiagnosisData.tryParse(message.text)
+        : null;
+    final isJson = data != null;
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -33,7 +32,9 @@ class ChatGenUiCard extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 16, right: 40),
         padding: isJson ? EdgeInsets.zero : const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isJson ? Colors.transparent : theme.colorScheme.surfaceContainerHighest,
+          color: isJson
+              ? Colors.transparent
+              : theme.colorScheme.surfaceContainerHighest,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(16),
             topRight: Radius.circular(16),
@@ -46,7 +47,10 @@ class ChatGenUiCard extends ConsumerWidget {
             : MarkdownBody(
                 data: message.text,
                 styleSheet: MarkdownStyleSheet(
-                  p: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 15),
+                  p: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 15,
+                  ),
                 ),
               ),
       ),
@@ -54,9 +58,9 @@ class ChatGenUiCard extends ConsumerWidget {
   }
 
   Widget _buildGenUiCard(
-    BuildContext context, 
-    WidgetRef ref, 
-    DiagnosisData data, 
+    BuildContext context,
+    WidgetRef ref,
+    DiagnosisData data,
   ) {
     final state = ref.watch(diagnosisSessionProvider);
     final notifier = ref.read(diagnosisSessionProvider.notifier);
@@ -66,7 +70,9 @@ class ChatGenUiCard extends ConsumerWidget {
     bool? initialHelpful;
     if (state.currentRecordId != null) {
       final historyList = ref.watch(diagnosisHistoryProvider);
-      final record = historyList.where((r) => r.id == state.currentRecordId).firstOrNull;
+      final record = historyList
+          .where((r) => r.id == state.currentRecordId)
+          .firstOrNull;
       initialHelpful = record?.isHelpful;
     }
 
@@ -93,14 +99,21 @@ class ChatGenUiCard extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: (data.severity.toLowerCase() == 'none' || data.diseaseName.toLowerCase().contains('healthy'))
+                  color:
+                      (data.severity.toLowerCase() == 'none' ||
+                          data.diseaseName.toLowerCase().contains('healthy'))
                       ? Colors.green.withValues(alpha: 0.1)
                       : theme.colorScheme.errorContainer,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  (data.severity.toLowerCase() == 'none' || data.diseaseName.toLowerCase().contains('healthy')) ? LucideIcons.leaf : LucideIcons.bug,
-                  color: (data.severity.toLowerCase() == 'none' || data.diseaseName.toLowerCase().contains('healthy'))
+                  (data.severity.toLowerCase() == 'none' ||
+                          data.diseaseName.toLowerCase().contains('healthy'))
+                      ? LucideIcons.leaf
+                      : LucideIcons.bug,
+                  color:
+                      (data.severity.toLowerCase() == 'none' ||
+                          data.diseaseName.toLowerCase().contains('healthy'))
                       ? Colors.green
                       : theme.colorScheme.error,
                   size: 24,
@@ -118,12 +131,20 @@ class ChatGenUiCard extends ConsumerWidget {
                         color: AppTheme.foreground,
                       ),
                     ),
-                    if (!(data.severity.toLowerCase() == 'none' || data.diseaseName.toLowerCase().contains('healthy'))) ...[
+                    if (!(data.severity.toLowerCase() == 'none' ||
+                        data.diseaseName.toLowerCase().contains(
+                          'healthy',
+                        ))) ...[
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: _getSeverityColor(data.severity).withValues(alpha: 0.1),
+                          color: _getSeverityColor(
+                            data.severity,
+                          ).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -134,7 +155,7 @@ class ChatGenUiCard extends ConsumerWidget {
                           ),
                         ),
                       ),
-                    ]
+                    ],
                   ],
                 ),
               ),
@@ -143,32 +164,66 @@ class ChatGenUiCard extends ConsumerWidget {
           const SizedBox(height: 24),
           if (data.symptoms.isNotEmpty)
             DiagnosisSectionCard(
-              icon: LucideIcons.info, title: 'Symptoms', color: AppTheme.primary, bg: AppTheme.primary,
-              child: DiagnosisBulletList(items: data.symptoms, color: AppTheme.primary),
+              icon: LucideIcons.info,
+              title: 'Symptoms',
+              color: AppTheme.primary,
+              bg: AppTheme.primary,
+              child: DiagnosisBulletList(
+                items: data.symptoms,
+                color: AppTheme.primary,
+              ),
             ),
           const SizedBox(height: 16),
           if (data.causes.isNotEmpty)
             DiagnosisSectionCard(
-              icon: LucideIcons.search, title: 'Causes', color: Colors.orange, bg: Colors.orange,
-              child: DiagnosisBulletList(items: data.causes, color: Colors.orange),
+              icon: LucideIcons.search,
+              title: 'Causes',
+              color: Colors.orange,
+              bg: Colors.orange,
+              child: DiagnosisBulletList(
+                items: data.causes,
+                color: Colors.orange,
+              ),
             ),
           const SizedBox(height: 16),
           if (data.treatment.isNotEmpty)
             DiagnosisSectionCard(
-              icon: LucideIcons.bandage, title: 'Treatment Plan', color: Colors.orange, bg: Colors.orange,
-              child: DiagnosisBulletList(items: data.treatment, color: Colors.orange),
+              icon: LucideIcons.bandage,
+              title: 'Treatment Plan',
+              color: Colors.orange,
+              bg: Colors.orange,
+              child: DiagnosisBulletList(
+                items: data.treatment,
+                color: Colors.orange,
+              ),
             ),
           const SizedBox(height: 16),
           if (data.prevention.isNotEmpty)
             DiagnosisSectionCard(
-              icon: LucideIcons.shieldCheck, title: 'Prevention', color: Colors.green, bg: Colors.green,
-              child: DiagnosisBulletList(items: data.prevention, color: Colors.green),
+              icon: LucideIcons.shieldCheck,
+              title: 'Prevention',
+              color: Colors.green,
+              bg: Colors.green,
+              child: DiagnosisBulletList(
+                items: data.prevention,
+                color: Colors.green,
+              ),
             ),
-          if (data.additionalNotes != null && data.additionalNotes!.isNotEmpty) ...[
+          if (data.additionalNotes != null &&
+              data.additionalNotes!.isNotEmpty) ...[
             const SizedBox(height: 16),
             DiagnosisSectionCard(
-              icon: LucideIcons.notebookPen, title: 'Notes', color: AppTheme.mutedForeground, bg: AppTheme.muted,
-              child: Text(data.additionalNotes!, style: theme.textTheme.bodySmall?.copyWith(height: 1.5, color: AppTheme.foreground)),
+              icon: LucideIcons.notebookPen,
+              title: 'Notes',
+              color: AppTheme.mutedForeground,
+              bg: AppTheme.muted,
+              child: Text(
+                data.additionalNotes!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  height: 1.5,
+                  color: AppTheme.foreground,
+                ),
+              ),
             ),
           ],
           const SizedBox(height: 16),
@@ -179,21 +234,32 @@ class ChatGenUiCard extends ConsumerWidget {
               IconButton(
                 icon: Icon(
                   state.isSpeaking ? LucideIcons.square : LucideIcons.volume2,
-                  color: state.isSpeaking ? theme.colorScheme.primary : AppTheme.mutedForeground,
+                  color: state.isSpeaking
+                      ? theme.colorScheme.primary
+                      : AppTheme.mutedForeground,
                 ),
                 onPressed: notifier.speakDiagnosis,
-                tooltip: state.isSpeaking ? 'Stop audio' : 'Listen to diagnosis',
+                tooltip: state.isSpeaking
+                    ? 'Stop audio'
+                    : 'Listen to diagnosis',
               ),
               // Feedback Buttons
               Row(
                 children: [
-                  Text("Was this helpful?", style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.mutedForeground)),
+                  Text(
+                    "Was this helpful?",
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.mutedForeground,
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   IconButton(
                     icon: Icon(
                       LucideIcons.thumbsUp,
                       size: 20,
-                      color: initialHelpful == true ? Colors.green : AppTheme.mutedForeground,
+                      color: initialHelpful == true
+                          ? Colors.green
+                          : AppTheme.mutedForeground,
                     ),
                     onPressed: () => notifier.provideFeedback(true),
                   ),
@@ -201,7 +267,9 @@ class ChatGenUiCard extends ConsumerWidget {
                     icon: Icon(
                       LucideIcons.thumbsDown,
                       size: 20,
-                      color: initialHelpful == false ? Colors.red : AppTheme.mutedForeground,
+                      color: initialHelpful == false
+                          ? Colors.red
+                          : AppTheme.mutedForeground,
                     ),
                     onPressed: () => notifier.provideFeedback(false),
                   ),

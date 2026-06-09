@@ -34,9 +34,9 @@ class _SupportScreenState extends State<SupportScreen> {
     final Uri uri = Uri.parse(urlString);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not launch $urlString')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not launch $urlString')));
       }
     }
   }
@@ -119,7 +119,9 @@ class _SupportScreenState extends State<SupportScreen> {
                       Text(
                         'Built with love for plant lovers 🌿',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.35,
+                          ),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -248,9 +250,7 @@ class _FeaturePill extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(50),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -303,5 +303,3 @@ class _SectionLabel extends StatelessWidget {
     );
   }
 }
-
-
